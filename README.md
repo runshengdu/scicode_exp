@@ -76,14 +76,14 @@ inspect eval scicode.py --model openai/gpt-4o --temperature 0 --log-format json 
 For more detailed information of using `inspect_ai`, see [`eval/inspect_ai` readme](eval/inspect_ai/)
 
 ### Evaluating Chinese Models (e.g., DeepSeek)
-If your model provider makes an OpenAI API compatible endpoint available, you can use it with Inspect via the openai-api provider, which uses the following model naming convention:
+If your model provider makes an OpenAI API compatible endpoint available, you can use it with Inspect via the `openai-api` provider, which uses the following model naming convention:
 
-openai-api/<provider-name>/<model-name>
+`openai-api/<provider-name>/<model-name>`
 
 Inspect will read environment variables corresponding to the api key and base url of your provider using the following convention (note that the provider name is capitalized):
 
-<PROVIDER_NAME>_API_KEY
-<PROVIDER_NAME>_BASE_URL
+- `<PROVIDER_NAME>_API_KEY`
+- `<PROVIDER_NAME>_BASE_URL`
 
 Example：Evaluating DeepSeek Chat Model
 ```
@@ -96,7 +96,7 @@ inspect eval scicode.py --model openai-api/deepseek/deepseek-chat --temperature 
 
 ### Recent Updates (2026-02-05)
 **Optimized Output**: All results are now organized in `eval/inspect_ai/results/` with timestamped folders.
-**Auto-Resume**: Supports `inspect eval-retry` to seamlessly continue interrupted evaluations.
+**Auto-Resume**: Supports `inspect eval-retry <log_file>` to seamlessly continue interrupted evaluations.
 **JSON Logs**: Logs are automatically saved as JSON and renamed for easier management.
 
 ## More information and FAQ
