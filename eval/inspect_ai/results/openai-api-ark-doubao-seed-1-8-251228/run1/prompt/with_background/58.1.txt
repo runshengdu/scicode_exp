@@ -1,0 +1,43 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Using a polytropic equation of state, write a function that computes pressure given density. The function shall take as input the density `rho` as a float as well as euqation of state parameters `eos_kappa` and `eos_Gamma`. The output is the pressure `press` as a float.
+Background
+An equation of state establishes a relationship between density and pressure. A simple model of a fluid a zero temperature is given by the polytropic equation of state:
+
+$$
+P(\rho) = \kappa \rho^\Gamma
+$$
+
+def eos_press_from_rho(rho, eos_Gamma, eos_kappa):
+    '''This function computes pressure for a polytropic equation of state given the density.
+    Inputs:
+    rho: the density, a float.
+    eos_Gamma: adiabatic exponent of the equation of state, a float
+    eos_kappa: coefficient of the equation of state, a float
+    Outputs:
+    press: pressure corresponding to the given density, a float
+    '''
+
+    return press
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+import scipy as sp
+import scipy.integrate as si
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

@@ -1,0 +1,73 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Write a function calculating second order derivatives using center symmetric scheme with second order accuracy. Using ghost cells with values equal to nearest cell on the boundary.
+Background:
+Centered second order differentiate operator:
+
+$$
+f^{\prime \prime}(x): \quad\{f(x+\Delta x)-2 f(x)+f(x-\Delta x)\} / \Delta x^2
+$$
+
+
+def second_diff(target, u, dx):
+    '''Inputs:
+    target : Target cell index, int
+    u      : Approximated solution value, array of floats with minimum length of 5
+    dx     : Spatial interval, float
+    Outputs:
+    deriv  : Second order derivative of the given target cell, float
+    '''
+    n = len(u)
+    # Get left neighbor value (handle boundary with ghost cell)
+    left = u[target - 1] if target > 0 else u[0]
+    # Get right neighbor value (handle boundary with ghost cell)
+    right = u[target + 1] if target < n - 1 else u[-1]
+    current = u[target]
+    # Calculate second derivative using centered scheme
+    deriv = (right - 2 * current + left) / (dx ** 2)
+    return deriv
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a function performing first order strang splitting at each time step
+Background
+The accuracy of the splitting method discussed in the section on Ordinary Operator Splitting for ODEs can
+be enhanced from $O(\Delta t)$ to $O(\Delta t^2)$ by employing Strang splitting.
+This method involves taking a half-step with the $f_0$ operator, a full step with the $f_1$ operator,
+and then another half-step with the $f_0$ operator.
+Over a time interval $\Delta t$, the algorithm can be expressed as follows.
+
+\begin{aligned}
+\frac{d \hat{u}}{d t} & =f_0\left(\hat{u}\right), \quad \hat{u}\left(t_n\right)=u\left(t_n\right), \quad t \in\left[t_n, t_n+\frac{1}{2} \Delta t\right] \\
+\frac{d \tilde{u}}{d t} & =f_1\left(\tilde{u}\right), \quad \tilde{u}\left(t_n\right)=\hat{u}\left(t_{n+\frac{1}{2}}\right), \quad t \in\left[t_n, t_n+\Delta t\right] \\
+\frac{d \check{u}}{d t} & =f_0\left(\check{u}\right), \quad \check{u}\left(t_n+\frac{1}{2}\right)=\tilde{u}\left(t_{n+\frac{1}{2}}\right), \quad t \in\left[t_{n+\frac{1}{2}} \Delta t, t_n+\Delta t\right]
+\end{aligned}
+
+def Strang_splitting(u, dt, dx, alpha):
+    '''Inputs:
+    u : solution, array of float
+    dt: time interval , float
+    dx: sptial interval, float
+    alpha: diffusive coefficient, float
+    Outputs:
+    u : solution, array of float
+    '''
+
+  return u_check
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

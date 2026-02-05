@@ -1,0 +1,65 @@
+import numpy as np
+from scipy import integrate, optimize
+
+def f_x(x, En):
+    '''Return the value of f(x) with energy En
+    Input
+    x: coordinate x; a float or a 1D array of float
+    En: energy; a float
+    Output
+    f_x: the value of f(x); a float or a 1D array of float
+    '''
+    return x**2 - En
+
+
+
+def Numerov(f_in, u_b, up_b, step):
+    '''Given precomputed function f(x), solve the differential equation u''(x) = f(x)*u(x)
+    using the Numerov method.
+    Inputs:
+    - f_in: input function f(x); a 1D array of float representing the function values at discretized points
+    - u_b: the value of u at boundary; a float
+    - up_b: the derivative of u at boundary; a float
+    - step: step size; a float.
+    Output:
+    - u: u(x); a 1D array of float representing the solution.
+    '''
+    n = len(f_in)
+    u = np.zeros_like(f_in)
+    u[0] = u_b
+    
+    if n == 1:
+        return u
+    
+    # Compute the second initial value using Taylor expansion
+    h = step
+    u1 = u_b + h * up_b + 0.5 * h**2 * f_in[0] * u_b
+    u[1] = u1
+    
+    # Precompute common terms for efficiency
+    h_sq = h ** 2
+    h_sq_over_12 = h_sq / 12
+    
+    # Iterate using Numerov method for remaining points
+    for i in range(2, n):
+        # Extract f values at relevant points
+        f_prev_prev = f_in[i-2]
+        f_prev = f_in[i-1]
+        f_curr = f_in[i]
+        
+        # Extract u values at relevant points
+        u_prev_prev = u[i-2]
+        u_prev = u[i-1]
+        
+        # Calculate terms for Numerov formula
+        term1 = 2 * u_prev * (1 - h_sq_over_12 * f_prev)
+        term2 = u_prev_prev * (1 - h_sq_over_12 * f_prev_prev)
+        term3 = h_sq * f_prev * u_prev
+        
+        numerator = term1 - term2 + term3
+        denominator = 1 - h_sq_over_12 * f_curr
+        
+        # Compute current u value
+        u[i] = numerator / denominator
+    
+    return u

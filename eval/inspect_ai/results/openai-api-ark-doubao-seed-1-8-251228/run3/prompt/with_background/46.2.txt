@@ -1,0 +1,143 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Write a Python class to implement a Slater wave function. The class contains functions to evaluate the unnormalized wave function psi, (gradient psi) / psi, (laplacian psi) / psi, and kinetic energy. Each function takes `configs` of shape `(nconfig, nelectrons, ndimensions)` as an input where: conf is the number of configurations, nelec is the number of electrons (2 for helium), ndim is the number of spatial dimensions (usually 3). The Slater wave function is given by $\exp(-\alpha r_1) \exp(-\alpha r_2)$.
+Background
+
+Slater
+
+Define a simple wave function with exponential orbitals and no Jastrow factor.
+
+**Value**
+
+\begin{align}
+\psi(r_1, r_2) &= \exp(-\alpha r_1) \exp(-\alpha r_2).
+\end{align}
+
+**Gradient**
+
+\begin{align}
+\frac{\nabla \psi}{\psi} &= -\alpha \left[\frac{\mathbf{r}_1 }{r_1}, \frac{\mathbf{r}_2}{r_2} \right]
+\end{align}
+
+**Laplacian**
+
+\begin{align}
+\frac{\nabla^2 \psi}{\psi} &= \left[-\frac{2 \alpha}{r_1} + \alpha^2, -\frac{2 \alpha}{r_2} + \alpha^2\right]
+\end{align}
+
+
+
+class Slater:
+    def __init__(self, alpha):
+        '''Args: 
+            alpha: exponential decay factor
+        '''
+        self.alpha = alpha
+
+    def value(self, configs):
+        '''Calculate unnormalized psi
+        Args:
+            configs (np.array): electron coordinates of shape (nconf, nelec, ndim)
+        Returns:
+            val (np.array): (nconf,)
+        '''
+        # Compute distance of each electron from origin
+        r = np.linalg.norm(configs, axis=2)  # shape (nconf, nelec)
+        # Sum over electrons for each configuration and compute psi
+        sum_r = np.sum(r, axis=1)  # shape (nconf,)
+        val = np.exp(-self.alpha * sum_r)
+        return val
+
+    def gradient(self, configs):
+        '''Calculate (gradient psi) / psi
+        Args:
+            configs (np.array): electron coordinates of shape (nconf, nelec, ndim)
+        Returns:
+            grad (np.array): (nconf, nelec, ndim)
+        '''
+        # Compute distance of each electron from origin with preserved dimensions
+        r = np.linalg.norm(configs, axis=2, keepdims=True)  # shape (nconf, nelec, 1)
+        # Calculate gradient contribution per electron coordinate
+        grad = -self.alpha * configs / r
+        return grad
+
+    def laplacian(self, configs):
+        '''Calculate (laplacian psi) / psi
+        Args:
+            configs (np.array): electron coordinates of shape (nconf, nelec, ndim)
+        Returns:
+            lap (np.array): (nconf, nelec)
+        '''
+        # Compute distance of each electron from origin
+        r = np.linalg.norm(configs, axis=2)  # shape (nconf, nelec)
+        # Calculate per-electron laplacian term
+        lap = (-2 * self.alpha / r) + (self.alpha ** 2)
+        return lap
+
+    def kinetic(self, configs):
+        '''Calculate the kinetic energy
+        Args:
+            configs (np.array): electron coordinates of shape (nconf, nelec, ndim)
+        Returns:
+            kin (np.array): (nconf,)
+        '''
+        # Get per-electron laplacian contributions
+        lap = self.laplacian(configs)
+        # Sum over electrons and apply kinetic energy factor
+        kin = -0.5 * np.sum(lap, axis=1)
+        return kin
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a Python class for Hamiltonian to evaluate electron-electron and electron-ion potentials of a helium atom from the given `configs`, which has shape (nconf, nelec, ndim) where nconf is the number of configurations, nelec is the number of electrons (2 for helium), ndim is the number of spatial dimensions (usually 3)
+Background
+
+The Hamiltonian is given by
+
+\begin{align}
+H &= -\frac{1}{2} \nabla_{1}^2 - \frac{1}{2} \nabla_{2}^2 - \frac{2}{r_1} - \frac{2}{r_2} + \frac{1}{r_{12}}.
+\end{align}
+
+class Hamiltonian:
+    def __init__(self, Z):
+        '''Z: atomic number
+        '''
+    def potential_electron_ion(self, configs):
+        '''Calculate electron-ion potential
+        Args:
+            configs (np.array): electron coordinates of shape (nconf, nelec, ndim)
+        Returns:
+            v_ei (np.array): (nconf,)
+        '''
+    def potential_electron_electron(self, configs):
+        '''Args:
+            configs (np.array): electron coordinates of shape (nconf, nelec, ndim)
+        Returns:
+            v_ee (np.array): (nconf,)
+        '''
+    def potential(self, configs):
+        '''Total potential energy
+        Args:
+            configs (np.array): electron coordinates of shape (nconf, nelec, ndim)
+        Returns:
+            v (np.array): (nconf,)        
+        '''
+
+        return v
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

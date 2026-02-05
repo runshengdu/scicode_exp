@@ -1,0 +1,180 @@
+import numpy as np
+
+def init_grid(Nt, Nx, Ny, x_split, T1, alpha1, T2, alpha2):
+    '''Initialize a 3d array for storing the temperature values. The array has one time dimension and two real space dimensions.
+    Initialize a 2d array for storing the thermal diffusivity corresponding to each grid point in real space.  
+    There could be a vertical boundary in real space that represents the interface between two different materials.
+    Input
+    Nt: time dimension of the temperature grid; int
+    Nx: x-dimension (number of columns) of the temperature grid; int
+    Ny: y-dimension (number of rows) of the temperature grid; int
+    x_split: the column index of the vertical interface. All columns up to and including this index (material 1) will have T1 and alpha1, and all columns with a larger index (material 2) will have T2 and alpha2; int
+    T1: the initial temperature of each grid point for material 1(in Celsius); float
+    alpha1: the thermal diffusivity of material 1; float
+    T2: the initial temperature of each grid point for material 2(in Celsius); float
+    alpha2: the heat conductivity of material 2; float
+    Output
+    temp_grid: temperature grid; 3d array of floats
+    diff_grid: thermal diffusivity grid; 2d array of floats
+    '''
+    # Initialize temperature grid with zeros for all time steps
+    temp_grid = np.zeros((Nt, Ny, Nx), dtype=np.float64)
+    
+    # Fill initial temperature for first time step
+    # Material 1: columns 0 to x_split (inclusive)
+    temp_grid[0, :, :x_split + 1] = T1
+    # Material 2: columns x_split+1 to Nx-1
+    temp_grid[0, :, x_split + 1:] = T2
+    
+    # Initialize diffusivity grid with material 2 values first
+    diff_grid = np.full((Ny, Nx), alpha2, dtype=np.float64)
+    # Set material 1 values for columns up to x_split
+    diff_grid[:, :x_split + 1] = alpha1
+    
+    return temp_grid, diff_grid
+
+
+def add_dirichlet_bc(grid, time_index, bc=np.array([])):
+    '''Add Dirichlet type of boundary conditions to the temperature grid. Users define the real space positions and values of the boundary conditions. 
+    This function will update boundary conditions constantly as time progresses.
+    Boundary conditions will not be applied to corner grid points.
+    Input
+    grid: the temperature grid for the problem; 3d array of floats
+    time_index: the function will update the boundary conditions for the slice with this time axis index; int
+    bc: a 2d array where each row has three elements: i, j, and T. 
+        - i and j: the row and column indices to set the boundary conditions; ints
+        - T: the value of the boundary condition; float
+    Output
+    grid: the updated temperature grid; 3d array of floats
+    '''
+    # Get spatial dimensions from the grid shape
+    Ny, Nx = grid.shape[1], grid.shape[2]
+    
+    # Iterate over each boundary condition entry
+    for entry in bc:
+        # Extract and convert indices to integers
+        i = int(entry[0])
+        j = int(entry[1])
+        temp_value = entry[2]
+        
+        # Check if the point is a corner grid point
+        is_corner = (i == 0 and j == 0) or \
+                    (i == 0 and j == Nx - 1) or \
+                    (i == Ny - 1 and j == 0) or \
+                    (i == Ny - 1 and j == Nx - 1)
+        
+        # Apply boundary condition only if not a corner
+        if not is_corner:
+            grid[time_index, i, j] = temp_value
+    
+    return grid
+
+
+def add_neumann_bc(grid, time_index, bc=np.array([])):
+    '''Add Neumann type of boundary conditions to the temperature grid. Users define the real space positions and values of the boundary conditions.
+    This function will update boundary conditions constantly as time progresses.
+    Boundary conditions will not be applied to corner grid points.
+    Input
+    grid: the temperature grid for the problem; 3d array of floats
+    time_index: the function will update the boundary conditions for the slice with this time axis index; int
+    bc: a 2d array where each row has three elements: i, j, and T. 
+        - i and j: the row and column indices to set the boundary conditions; ints
+        - T: the value of the boundary condition; float
+    Output
+    grid: the updated temperature grid; 3d array of floats
+    '''
+    # Get spatial dimensions from the grid shape
+    Ny, Nx = grid.shape[1], grid.shape[2]
+    
+    # Iterate over each boundary condition entry
+    for entry in bc:
+        # Extract and convert indices to integers, get boundary value
+        i = int(entry[0])
+        j = int(entry[1])
+        g = entry[2]
+        
+        # Check if the point is a corner grid point
+        is_corner = (i == 0 and j == 0) or \
+                    (i == 0 and j == Nx - 1) or \
+                    (i == Ny - 1 and j == 0) or \
+                    (i == Ny - 1 and j == Nx - 1)
+        if is_corner:
+            continue
+        
+        # Check if the point is a non-corner boundary point
+        is_boundary = (i == 0 or i == Ny - 1 or j == 0 or j == Nx - 1)
+        if not is_boundary:
+            continue
+        
+        # Apply appropriate finite difference based on boundary location
+        if j == 0:
+            # Left boundary: use forward difference in x-direction
+            grid[time_index, i, j] = grid[time_index, i, j + 1] + g
+        elif j == Nx - 1:
+            # Right boundary: use backward difference in x-direction
+            grid[time_index, i, j] = grid[time_index, i, j - 1] + g
+        elif i == 0:
+            # Top boundary: use forward difference in y-direction
+            grid[time_index, i, j] = grid[time_index, i + 1, j] + g
+        elif i == Ny - 1:
+            # Bottom boundary: use backward difference in y-direction
+            grid[time_index, i, j] = grid[time_index, i - 1, j] + g
+    
+    return grid
+
+
+
+def heat_equation(Nt, Nx, Ny, x_split, T1, alpha1, T2, alpha2, bc_dirichlet, bc_neumann):
+    '''Main function to numerically solve a 2d heat equation problem.
+    Input
+    Nt: time dimension of the 3d temperature grid; int
+    Nx: x-dimension (number of columns) of the 3d temperature grid; int
+    Ny: y-dimension (number of rows) of the 3d temperature grid; int
+    x_split: the column index of the vertical interface. All columns up to and including this index (material 1) will have T1 and alpha1, and all columns with a larger index (material 2) will have T2 and alpha2; int
+    T1: the initial temperature of each grid point for material 1(in Celsius); float
+    alpha1: the thermal diffusivity of material 1; float
+    T1: the initial temperature of each grid point for material 2(in Celsius); float
+    alpha2: the heat conductivity of material 2; float
+    bc_dirichlet: a 2d array where each row has three elements: i, j, and T. 
+        - i and j: the row and column indices to set the boundary conditions; ints
+        - T: the value of the Dirichlet boundary condition; float
+    bc_neumann: a 2d array where each row has three elements: i, j, and T. 
+        - i and j: the row and column indices to set the boundary conditions; ints
+        - T: the value of the Neumann boundary condition; float
+    Output
+    temp_grid: the temperature grid of the heat equation problem; 3d array of floats
+    '''
+
+    # Initialize temperature and diffusivity grids
+    temp_grid, diff_grid = init_grid(Nt, Nx, Ny, x_split, T1, alpha1, T2, alpha2)
+    
+    # Calculate time step for stability
+    max_alpha = max(alpha1, alpha2)
+    dt = 1.0 / (4 * max_alpha)
+    
+    # Iterate over each time step
+    for t in range(1, Nt):
+        # Copy previous time step to current (preserves boundary points not modified by BCs)
+        temp_grid[t, :, :] = temp_grid[t-1, :, :]
+        
+        # Get previous time step temperature
+        T_prev = temp_grid[t-1]
+        
+        # Compute laplacian using central differences for interior points
+        # Second derivative in x-direction (T_xx) for all rows, interior columns
+        T_xx = T_prev[:, 2:] - 2 * T_prev[:, 1:-1] + T_prev[:, :-2]
+        # Second derivative in y-direction (T_yy) for interior rows, all columns
+        T_yy = T_prev[2:, :] - 2 * T_prev[1:-1, :] + T_prev[:-2, :]
+        # Laplacian is sum of T_xx (interior rows) and T_yy (interior columns)
+        laplacian = T_xx[1:-1, :] + T_yy[:, 1:-1]
+        
+        # Update interior points using FTCS scheme
+        temp_grid[t, 1:-1, 1:-1] = T_prev[1:-1, 1:-1] + diff_grid[1:-1, 1:-1] * dt * laplacian
+        
+        # Apply Dirichlet boundary conditions
+        temp_grid = add_dirichlet_bc(temp_grid, t, bc_dirichlet)
+        
+        # Apply Neumann boundary conditions
+        temp_grid = add_neumann_bc(temp_grid, t, bc_neumann)
+    
+    return temp_grid

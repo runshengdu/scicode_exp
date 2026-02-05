@@ -1,0 +1,134 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Wrap to periodic boundaries
+Implementing a Python function named `wrap`. This function should apply periodic boundary conditions to the coordinates of a particle inside a cubic simulation box.
+Background:
+To implement PBC, the unit cell is surrounded by translated copies in all directions to approximate an infinitely large system. When one molecule diffuses across the boundary of the simulation box it reappears on the opposite side. So each molecule always interacts with its neighbours even though they may be on opposite sides of the simulation box
+
+
+def wrap(r, L):
+    '''Apply periodic boundary conditions to a vector of coordinates r for a cubic box of size L.
+    Parameters:
+    r : The (x, y, z) coordinates of a particle.
+    L (float): The length of each side of the cubic box.
+    Returns:
+    coord: numpy 1d array of floats, the wrapped coordinates such that they lie within the cubic box.
+    '''
+    r_np = np.asarray(r)
+    coord = np.mod(r_np, L)
+    return coord
+
+
+------
+
+Minimum Image Distance Function
+
+Implementing Python function named `dist` that calculates the minimum image distance between two atoms in a periodic cubic system.
+Background:
+The function should implement the minimum image convention, which is used in molecular dynamics simulations to consider the shortest distance between periodic images of particles.
+
+
+def dist(r1, r2, L):
+    '''Calculate the minimum image distance between two atoms in a periodic cubic system.
+    Parameters:
+    r1 : The (x, y, z) coordinates of the first atom.
+    r2 : The (x, y, z) coordinates of the second atom.
+    L (float): The length of the side of the cubic box.
+    Returns:
+    float: The minimum image distance between the two atoms.
+    '''
+    r1_np = np.asarray(r1)
+    r2_np = np.asarray(r2)
+    dr = r1_np - r2_np
+    # Adjust displacement to minimum image convention
+    dr_adjusted = np.mod(dr + L / 2, L) - L / 2
+    # Compute Euclidean distance
+    distance = np.linalg.norm(dr_adjusted)
+    return distance
+
+
+------
+
+Minimum Image Vector Function
+
+Implementing Python function named `dist_v` that calculates the minimum image vector between two atoms in a periodic cubic system.
+Background:
+The function should implement the minimum image convention, which is used in molecular dynamics simulations to consider the shortest distance between periodic images of particles.
+
+
+def dist_v(r1, r2, L):
+    '''Calculate the minimum image vector between two atoms in a periodic cubic system.
+    Parameters:
+    r1 : The (x, y, z) coordinates of the first atom.
+    r2 : The (x, y, z) coordinates of the second atom.
+    L (float): The length of the side of the cubic box.
+    Returns:
+    numpy.ndarray: The minimum image vector between the two atoms.
+    '''
+    r1_np = np.asarray(r1)
+    r2_np = np.asarray(r2)
+    dr = r1_np - r2_np
+    # Adjust each component to follow minimum image convention
+    dr_adjusted = np.mod(dr + L / 2, L) - L / 2
+    return dr_adjusted
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Lennard-Jones Potential
+
+Implementing a Python function named `E_ij` to get Lennard-Jones potential with potential well depth epislon that reaches zero at distance sigma between pair of atoms with distance r. which is truncated and shifted to zero at a cutoff distance `rc`.
+Background
+The Lennard-Jones potential models soft repulsive and attractive (van der Waals) interactions. Hence, the Lennard-Jones potential describes electronically neutral atoms or molecules. The commonly used expression for the Lennard-Jones potential is:
+
+$V^{tr-sh}_{LJ}(r) =
+\begin{cases}
+V_{LJ}(r)-V_{LJ}(r_c), & \text{if } r < r_c\\
+0, & \text{if } r > r_c
+\end{cases}
+$
+
+$
+V_{LJ}(r) = 4\epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r} \right)^{6} \right].
+$
+
+$
+V_{LJ}(r_c) = 4\epsilon \left[ \left( \frac{\sigma}{r_c} \right)^{12} - \left( \frac{\sigma}{r_c} \right)^{6} \right].
+$
+
+
+where r is the distance between two interacting particles, epsilon is the depth of the potential well (usually referred to as 'dispersion energy'), and sigma is the distance at which the particle-particle potential energy V is zero (often referred to as 'size of the particle').
+
+The potential is truncated and shifted at a distance $ r_c $ to ensure the interaction energy becomes zero for $ r > r_c $, simplifying the force computations.
+
+def E_ij(r, sigma, epsilon, rc):
+    '''Calculate the combined truncated and shifted Lennard-Jones potential energy between two particles.
+    Parameters:
+    r (float): The distance between particles i and j.
+    sigma (float): The distance at which the inter-particle potential is zero for the Lennard-Jones potential.
+    epsilon (float): The depth of the potential well for the Lennard-Jones potential.
+    rc (float): The cutoff distance beyond which the potentials are truncated and shifted to zero.
+    Returns:
+    float: The combined potential energy between the two particles, considering the specified potentials.
+    '''
+
+    return E
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import math
+import numpy as np
+import scipy as sp
+from scipy.constants import  Avogadro
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

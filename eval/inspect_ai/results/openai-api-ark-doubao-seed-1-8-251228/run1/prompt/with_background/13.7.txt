@@ -1,0 +1,142 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Construct the spatial differential operator a: Partial Derivative $\partial_i$. The first differential operator we want is a simple partial derivative: given an array of field values on 3d meshes, compute the partial derivates and return $\partial_x f(x,y,z)$, $\partial_y f(x,y,z)$ and $\partial_z f(x,y,z)$. We need a second order finite difference operator and on the boundary please use one-sided second-order expression.
+
+
+
+print('Hello, World!')
+
+
+------
+
+Construct the spatial differential operator b: Laplacian $\nabla^2 = \partial_i \partial^i$. Take the laplacian calculation for a field on 3d meshes. Please implement the second order finite difference. Only output the value in the interior grids and make sure the output boundary values are zero.
+
+
+
+print('Hello, World!')
+
+
+------
+
+Construct the spatial differential operator c: Gradient $\nabla_i f$ of Maxwell equations. Take the gradient calculation for a field on 3d meshes, that is calculate $\partial_x f, \partial_y f, \partial_z f$.  Please implement the second order finite difference. Only output the value in the interior grids and make sure the output boundary values are zero. Assume the grid length is the same in all dimensions.
+
+
+
+print('Hello, World!')
+
+
+------
+
+Construct the spatial differential operator d: Divergence $\nabla_i v^i$ of Maxwell equations. Please implement the second order finite difference for a vector fields on 3d meshes. Only output the value in the interior grids and make sure the output boundary values are zero. Assume the grid length is the same in all dimensions and take the grid length as a input in the function.
+
+
+
+print('Hello, World!')
+
+
+------
+
+Construct the spatial differential operator e: Gradient of Divergence $\nabla_i (\nabla_j v^j)$. Please use the second order finite difference to calculate the gradient of the divergence of a vector fields. The fields are on a 3d mesh with the same grid length. Please note by first taking a divergence and then apply the gradient will result in larger error. Need to work out a finite difference formula for this operator.
+Background
+
+If we want to calculate the x gradient of divergence of vector field A then, we need to calculate 
+$$
+\partial_x (\partial_j A^j)  = \partial_x \partial_x A^x + \partial_x\partial_y A^{y} + \partial_x\partial_z A^z
+$$
+the first term is the second derivative of $A^x$, the last two terms are mixed second derivatives and can also be implemented in second order finite difference as 
+$$
+(\partial_x \partial_y A^y)_{ijk} = \frac{1}{4\Delta^2}(A^y_{i+1,j+1,k} - A^y_{i-1,j+1,k} - A^y_{i+1,j-1,k} + A^y_{i-1,j-1,k})
+$$
+with $\Delta$ denoting the grid length.
+
+
+print('Hello, World!')
+
+
+------
+
+Construct Maxwell Fields Object. Please construct a Maxwell fields object that stores the evolving fields $E_x,E_y,E_z$, $A_x, A_y, A_z$ and $\phi$ as well as the cartesian coordinates the fields live on. The cartesian coordinates will be cell centered grids. Also, for future use, please also store the coordinate distance to the origin on each point. For simplicity, we only construct coordinates with $x>0, y>0$ and $z>0$ and reflect the fields in other octants in the final step. As a result, please construct an object that contains the mesh grid for the positive octant.
+
+
+def __init__(self, n_grid, x_out):
+    """Constructor sets up coordinates, memory for variables.
+        The variables:
+            mesh points:
+                x: the x coordinate for each mesh grid
+                y: the y coordinate for each mesh grid
+                z: the z coordinate for each mesh grid
+                t: the time coordinate of the simulation
+                r: the distance to the origin for each mesh grid
+            evolving fields:
+                E_x: the x component of the field E
+                E_y: the y componnet of the field E
+                E_z: the z component of the field E
+                A_x: the x component of the field A
+                A_y: the y component of the field A
+                A_z: the z component of the field A
+                phi: the scalar potential field phi values
+            monitor variables:
+                constraint: the current constraint violation value from the evolving fields.
+                
+        """
+    self.n_grid = n_grid
+    self.n_vars = 7
+    self.delta = float(x_out) / (n_grid - 2.0)
+    delta = self.delta
+    self.x = np.linspace(-self.delta * 0.5, x_out + 0.5 * self.delta, self.n_grid)[:, None, None]
+    self.y = np.linspace(-self.delta * 0.5, x_out + 0.5 * self.delta, self.n_grid)[None, :, None]
+    self.z = np.linspace(-self.delta * 0.5, x_out + 0.5 * self.delta, self.n_grid)[None, None, :]
+    self.r = np.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+    self.E_x = zeros((n_grid, n_grid, n_grid))
+    self.E_y = zeros((n_grid, n_grid, n_grid))
+    self.E_z = zeros((n_grid, n_grid, n_grid))
+    self.A_x = zeros((n_grid, n_grid, n_grid))
+    self.A_y = zeros((n_grid, n_grid, n_grid))
+    self.A_z = zeros((n_grid, n_grid, n_grid))
+    self.phi = zeros((n_grid, n_grid, n_grid))
+    self.constraint = zeros((n_grid, n_grid, n_grid))
+    self.t = 0.0
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Please write a function that could apply the boundary condition for the derivatives. Since the calculation is done in the interior of the simulation octant and the mesh is cell centered, so please apply boundary condition for the inner boundary mesh grids (x=0,y=0,z=0) using the values in the interior of grid.
+
+
+def symmetry(f_dot, x_sym, y_sym, z_sym):
+    '''Computes time derivatives on inner boundaries from symmetry
+    Parameters:
+    -----------
+    f_dot : numpy.ndarray
+        A 3D array representing the time derivatives of the scalar field. Shape: (nx, ny, nz).
+        This array will be updated in-place with symmetric boundary conditions applied.
+    x_sym : float
+        The symmetry factor to apply along the x-axis (typically -1 for antisymmetry, 1 for symmetry).
+    y_sym : float
+        The symmetry factor to apply along the y-axis (typically -1 for antisymmetry, 1 for symmetry).
+    z_sym : float
+        The symmetry factor to apply along the z-axis (typically -1 for antisymmetry, 1 for symmetry).
+    Returns:
+    --------
+    f_dot : numpy.ndarray
+        The same 3D array passed in as input, with updated values at the boundaries according to the symmetry conditions.
+        Shape: (nx, ny, nz).
+    '''
+
+    return f_dot
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+from numpy import zeros, linspace, exp, sqrt
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

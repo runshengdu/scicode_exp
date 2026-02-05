@@ -1,0 +1,51 @@
+import numpy as np
+
+def wrap(r, L):
+    '''Apply periodic boundary conditions to a vector of coordinates r for a cubic box of size L.
+    Parameters:
+    r : The (x, y, z) coordinates of a particle.
+    L (float): The length of each side of the cubic box.
+    Returns:
+    coord: numpy 1d array of floats, the wrapped coordinates such that they lie within the cubic box.
+    '''
+    r_np = np.asarray(r)
+    coord = r_np % L
+    return coord
+
+
+
+def E_i(r, pos, sigma, epsilon, L, r_c):
+    '''Calculate the total Lennard-Jones potential energy of a particle with other particles in a periodic system.
+    Parameters:
+    r : array, the (x, y, z) coordinates of the target particle.
+    pos : An array of (x, y, z) coordinates for each of the other particles in the system.
+    sigma : float, the distance at which the potential minimum occurs
+    epsilon : float, the depth of the potential well
+    L : float, the length of the side of the cubic box
+    r_c : float, cut-off distance
+    Returns:
+    float, the total Lennard-Jones potential energy of the particle due to its interactions with other particles.
+    '''
+    def E_ij(r_ij):
+        """Compute the Lennard-Jones potential between a pair of atoms given their distance."""
+        if 0 < r_ij < r_c:
+            sigma_over_r = sigma / r_ij
+            return 4 * epsilon * (sigma_over_r ** 12 - sigma_over_r ** 6)
+        else:
+            return 0.0
+    
+    r_np = np.asarray(r)
+    pos_np = np.asarray(pos)
+    total_energy = 0.0
+    
+    for pos_j in pos_np:
+        # Calculate distance vector between target particle and current particle
+        delta = pos_j - r_np
+        # Apply minimum image convention to get shortest periodic distance
+        delta_mic = delta - L * np.round(delta / L)
+        # Compute Euclidean distance
+        r_ij = np.linalg.norm(delta_mic)
+        # Add pairwise potential energy to total
+        total_energy += E_ij(r_ij)
+    
+    return total_energy

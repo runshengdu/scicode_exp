@@ -1,0 +1,54 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Write a function to initialize a 3D and a 2D array for a 2D heat equation problem. With input sizes, the 3D array will store temperatures, where the first dimension is time, and the second and third dimensions are x and y coordinates of the grid. The grid is divided into two parts by a vertical interface at a specified index. Grid points on the interface and to the left represent material one, with an initial temperature `T1` and thermal diffusivity `alpha1`. The remaining grid points represent material two with an initial temperature `T2` and thermal diffusivity `alpha2`. The 2D array stores the thermal diffusivities. Populate only the first time step with the initial temperatures, and initialize arrays for later time steps to zero.
+
+
+
+print('Hello, World!')
+
+
+------
+
+Write a function to apply Dirichlet boundary conditions to the temperature array defined in . Users provide the real-space positions and values of the boundary conditions through a 2D array. The index of the time slice to be modified will be given as input. This function should update boundary conditions constantly as time progresses, without applying them to the corner grid points.
+
+
+
+print('Hello, World!')
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a function to apply Neumann boundary conditions to the temperature array defined in . Users provide the real space positions and values of the boundary conditions through a 2D array. Depending on the boundary, the function should choose either forward or backward difference method. The index of the time slice to be modified will be given as input. This function should update boundary conditions constantly as time progresses, without applying them to the corner grid points. The boundary normal should point outward from each boundary.
+
+
+def add_neumann_bc(grid, time_index, bc=np.array([])):
+    '''Add Neumann type of boundary conditions to the temperature grid. Users define the real space positions and values of the boundary conditions.
+    This function will update boundary conditions constantly as time progresses.
+    Boundary conditions will not be applied to corner grid points.
+    Input
+    grid: the temperature grid for the problem; 3d array of floats
+    time_index: the function will update the boundary conditions for the slice with this time axis index; int
+    bc: a 2d array where each row has three elements: i, j, and T. 
+        - i and j: the row and column indices to set the boundary conditions; ints
+        - T: the value of the boundary condition; float
+    Output
+    grid: the updated temperature grid; 3d array of floats
+    '''
+
+    return grid    
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

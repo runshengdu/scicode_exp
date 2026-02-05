@@ -1,0 +1,137 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Given integers $j$ and $d$, write a function that returns a standard basis vector $|j\rangle$ in $d$-dimensional space. If $d$ is given as an int and $j$ is given as a list $[j_1,j_2\cdots,j_n]$, then return the tensor product $|j_1\rangle|j_2\rangle\cdots|j_n\rangle$ of $d$-dimensional basis vectors. If $d$ is also given as a list $[d_1,d_2,\cdots,d_n]$, return $|j_1\rangle|j_2\rangle\cdots|j_n\rangle$ as tensor product of $d_1$, $d_2$, ..., and $d_n$ dimensional basis vectors.
+Background
+A standard basis vector $|j\rangle$ in $d$ dimensional space is
+\begin{pmatrix} 0 \\ 0 \\ \vdots \\ 1 \\ \vdots \\ 0 \end{pmatrix}
+with a 1 on the $j$-th position and 0's everywhere else. Tensor products of two vectors are given by the Kronecker product 
+\begin{align}
+|a\rangle|b\rangle = \begin{pmatrix} a_1 \\ a_2 \\ \vdots \\ a_n \end{pmatrix} \otimes \begin{pmatrix} b_1 \\ b_2 \\ \vdots \\ b_n \end{pmatrix} = \begin{pmatrix} a_1b_1 \\ a_1b_2 \\ \vdots \\ a_1b_n \\ a_2b_1 \\ a_2b_2 \\ \vdots \\ a_2b_n \\ a_nb_1 \\ a_nb_2 \vdots \\ a_nb_n \end{pmatrix}
+\end{align}
+
+
+
+def ket(dim, j):
+    '''Input:
+    dim: int or list, dimension of the ket
+    j: int or list, the i-th basis vector
+    Output:
+    out: dim dimensional array of float, the matrix representation of the ket
+    '''
+    if isinstance(j, int):
+        if isinstance(dim, int):
+            out = np.zeros(dim, dtype=float)
+            out[j] = 1.0
+        else:
+            raise TypeError("When j is an integer, dim must be an integer")
+    elif isinstance(j, list):
+        if isinstance(dim, int):
+            vectors = []
+            for idx in j:
+                vec = np.zeros(dim, dtype=float)
+                vec[idx] = 1.0
+                vectors.append(vec)
+            out = vectors[0]
+            for vec in vectors[1:]:
+                out = np.kron(out, vec)
+        elif isinstance(dim, list):
+            if len(j) != len(dim):
+                raise ValueError("Length of j must match length of dim when both are lists")
+            vectors = []
+            for idx, d in zip(j, dim):
+                vec = np.zeros(d, dtype=float)
+                vec[idx] = 1.0
+                vectors.append(vec)
+            out = vectors[0]
+            for vec in vectors[1:]:
+                out = np.kron(out, vec)
+        else:
+            raise TypeError("dim must be an integer or list of integers")
+    else:
+        raise TypeError("j must be an integer or list of integers")
+    
+    out = out.reshape(-1, 1)
+    return out
+
+
+------
+
+Write a function that returns the tensor product of an arbitrary number of matrices/vectors.
+
+
+
+def tensor(*args):
+    '''Takes the tensor product of an arbitrary number of matrices/vectors.
+    Input:
+    args: any number of nd arrays of floats, corresponding to input matrices
+    Output:
+    M: the tensor product (kronecker product) of input matrices, 2d array of floats
+    '''
+    if len(args) == 0:
+        return np.array([[1.0]], dtype=float)
+    
+    processed = []
+    for arg in args:
+        if not isinstance(arg, np.ndarray):
+            raise TypeError("All inputs must be numpy ndarrays")
+        if arg.ndim > 2:
+            raise ValueError("Inputs must be 0D (scalars), 1D (vectors) or 2D (matrices)")
+        
+        if arg.ndim == 0:
+            arg_2d = arg.reshape(1, 1)
+        elif arg.ndim == 1:
+            arg_2d = arg.reshape(-1, 1)
+        else:
+            arg_2d = arg
+        
+        processed.append(arg_2d.astype(float))
+    
+    result = processed[0]
+    for mat in processed[1:]:
+        result = np.kron(result, mat)
+    
+    return result
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a function that applies the Kraus operators of a quantum channel on a subsystem of a state with tensor function. If sys and dim are given as None, then the channel acts on the entire system of the state rho. The dimension of each subsystem of the state is also given as an input.
+Background
+The action of quantum channels can be written in terms of its Kraus representation:
+$$ \mathcal{N}(\rho) = \sum_i K_i \rho K_i^\dagger $$
+where $\sum_i K_i^\dagger K_i = \mathbb{I}$. The $K_i$'s are called the Kraus operators of the channel $\mathcal{N}$. If the quantum channel acts on the $i$-th subsystem of $\rho$, then the Kraus operators has the form $\mathbb{I}\otimes\cdots\otimes\mathbb{I}\otimes K_i\otimes\mathbb{I}\otimes\cdots\otimes\mathbb{I}$, where $K_i$ acts on the $i$-th subsystem and the identity acts on the remaining systems.
+
+
+def apply_channel(K, rho, sys=None, dim=None):
+    '''Applies the channel with Kraus operators in K to the state rho on
+    systems specified by the list sys. The dimensions of the subsystems of
+    rho are given by dim.
+    Inputs:
+    K: list of 2d array of floats, list of Kraus operators
+    rho: 2d array of floats, input density matrix
+    sys: list of int or None, list of subsystems to apply the channel, None means full system
+    dim: list of int or None, list of dimensions of each subsystem, None means full system
+    Output:
+    matrix: output density matrix of floats
+    '''
+
+        return matrix
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np 
+from scipy.optimize import fminbound
+import itertools
+from scipy.linalg import logm
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

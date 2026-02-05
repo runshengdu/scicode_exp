@@ -1,0 +1,54 @@
+import numpy as np
+import scipy.interpolate as interpolate
+
+
+
+
+def q_cal(th, gamma, E0, omega):
+    '''Calculate the in-plane momentum q, and out-of-plane momenta of the incident and scattered electron k_i_z and k_s_z.
+    Ensure that the signs of q, k_i_z and k_s_z are correctly represented.
+    Input 
+    th, angle between the incident electron and the sample surface normal is 90-th, a list of float in the unit of degree
+    gamma, angle between the incident and scattered electron, a list of float in the unit of degree
+    E0, incident electron energy, float in the unit of eV
+    omega, energy loss, a list of float in the unit of eV
+    Output
+    Q: a tuple (q,k_i_z,k_s_z) in the unit of inverse angstrom, where q is in-plane momentum, 
+       and k_i_z and k_s_z are out-of-plane momenta of the incident and scattered electron    
+    '''
+    # Fundamental constants with correct unit conversions
+    m_e_c2 = 510998.95  # eV, m_e*c² = 0.51099895 MeV converted to eV
+    hc = 1239.84193     # eV·nm, given Planck's constant times speed of light
+    hbar_c_ang = (hc / (2 * np.pi)) * 10  # Convert hbar*c from eV·nm to eV·Å (1 nm = 10 Å)
+    
+    # Precompute constant factor for wavevector calculation (Å⁻¹ / sqrt(eV))
+    sqrt_2mec2 = np.sqrt(2 * m_e_c2)
+    k_const = sqrt_2mec2 / hbar_c_ang
+    
+    # Convert input lists to numpy arrays for vectorized operations
+    th_arr = np.array(th)
+    gamma_arr = np.array(gamma)
+    omega_arr = np.array(omega)
+    
+    # Calculate incident angle relative to surface normal (theta_i) in radians
+    theta_i_deg = 90 - th_arr
+    theta_i_rad = np.deg2rad(theta_i_deg)
+    
+    # Calculate scattered angle relative to surface normal (theta_s) in radians
+    theta_s_deg = theta_i_deg + gamma_arr
+    theta_s_rad = np.deg2rad(theta_s_deg)
+    
+    # Calculate magnitudes of incident and scattered electron wavevectors
+    k_i = k_const * np.sqrt(E0)
+    k_s = k_const * np.sqrt(E0 - omega_arr)
+    
+    # Compute out-of-plane (z) components
+    k_i_z = k_i * np.cos(theta_i_rad)  # Positive since incident z-component is along +z
+    k_s_z = k_s * np.cos(theta_s_rad)  # Negative since scattered z-component is along -z
+    
+    # Compute in-plane (x) components and momentum transfer
+    k_i_x = k_i * np.sin(theta_i_rad)
+    k_s_x = k_s * np.sin(theta_s_rad)
+    q = k_s_x - k_i_x  # In-plane momentum transfer
+    
+    return (q, k_i_z, k_s_z)

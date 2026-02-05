@@ -1,0 +1,50 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Assumming periodic boundary conditrion, write a python function to simulate the Swift-Hohenberg in 2D space of N by N, using the pseudo-spectral method. The equation is given by $$
+\frac{\partial u}{\partial t} = \epsilon u - (1 + q_0^{-2}\nabla^2)^2 u - u^3
+$$ where $\epsilon$ serves as a control parameter of the system and $q_0$ is a critical mode. Given initial state $u_0$ at $t=0$, with a time step $dt$, solve the final state $u$ at time $T$. The order parameter $u$ remains real.
+Background
+Notice that the Swift-Hohenberg equation contains both gradient term and nonlinear term; hence, we adopt a split-step algorithm known as pseudo-spectral method. We rewrite the equation as
+$$
+\frac{\partial u}{\partial t} = [\epsilon u - u - u^3]-[2q_0^{-2}\nabla^2 + q_0^{-4}\nabla^4]u
+$$
+For one time step update, the input is the current state $u_N$, and the output is the order parameter at the subsequent step $u_{N+1}$:
+First, we update the term $\epsilon u - u - u^3$ in the position space to obtain an intermediate state $u_1$;
+2. Next, we tranform the tranport term $-[2q_0^{-2}\nabla^2 + q_0^{-4}\nabla^4]u$ to k-space, and update it in k-space based on $u_1$ using Fast Fourier Transform (FFT) and then invert it back to real space using the Inverse Fast Fourier Transform (IFFT) to obtain $u_{N+1}$.
+
+def solve_SH(u, dt, T, N, epsilon, q0):
+    '''Run a 2D simulation of Swift-Hohenberg equation
+    Input
+    u: initial condition of the order parameter, 2D array of floats
+    dt: time step size, float
+    T: total time of the ecolution, float
+    N: system size where the 2D system is of dimension N*N, int
+    epsilon: control parameter, float
+    q0: critical mode, float
+    Output
+    u: final state of the system at the end time T.
+    '''
+
+    return u
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+from numpy.fft import fft2, ifft2, fftshift, rfft2, irfft2, fftfreq, rfftfreq
+from scipy.signal import find_peaks, peak_widths
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

@@ -1,0 +1,144 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Convert diffractometer angles to the in-plane momentum transfer, $q$, and to the out-of-plane momenta of the incident and scattered electron, $k_i^z$ and $k_s^z$. Momentum transfer $Q$ is defined as $Q = \vec{k_s} - \vec{k_i}$. Assume the sample surface normal is along the $+z$ direction and the scattering plane lies in the $x-z$ plane. $k_i^z$ is along the $+z$ direction, $k_s^z$ is along the $-z$ direction, and $k_i^x$, $k_s^x$ are along the $+x$ direction. Using the electron mass $m_e = 0.51099895 $ MeV/$c^2$ and Planck's constant $hc = 1239.84193$ eV nm
+Background 
+electron momentum in the nonrelativistic limit is given by:
+$$k = \frac{\sqrt{2mE}}{\hbar}$$
+where $E$ is the electron energy and $m$ is the mass of a stationary electron.
+
+
+def q_cal(th, gamma, E0, omega):
+    '''Calculate the in-plane momentum q, and out-of-plane momenta of the incident and scattered electron k_i_z and k_s_z.
+    Ensure that the signs of q, k_i_z and k_s_z are correctly represented.
+    Input 
+    th, angle between the incident electron and the sample surface normal is 90-th, a list of float in the unit of degree
+    gamma, angle between the incident and scattered electron, a list of float in the unit of degree
+    E0, incident electron energy, float in the unit of eV
+    omega, energy loss, a list of float in the unit of eV
+    Output
+    Q: a tuple (q,k_i_z,k_s_z) in the unit of inverse angstrom, where q is in-plane momentum, 
+       and k_i_z and k_s_z are out-of-plane momenta of the incident and scattered electron    
+    '''
+    # Physical constants
+    m_e_c2 = 510998.95  # eV, m_e*c²
+    hc = 12398.4193     # eV·Å, h*c converted from eV·nm
+    hbar_c = hc / (2 * np.pi)  # eV·Å, ℏ*c
+    
+    # Convert input lists to numpy arrays for element-wise operations
+    th_arr = np.array(th)
+    gamma_arr = np.array(gamma)
+    omega_arr = np.array(omega)
+    
+    # Convert angles from degrees to radians
+    th_rad = np.radians(th_arr)
+    gamma_rad = np.radians(gamma_arr)
+    
+    # Calculate incident electron momentum magnitude (Å⁻¹)
+    k0 = np.sqrt(2 * m_e_c2 * E0) / hbar_c
+    
+    # Calculate scattered electron momentum magnitude for each energy loss (Å⁻¹)
+    ks_arr = np.sqrt(2 * m_e_c2 * (E0 - omega_arr)) / hbar_c
+    
+    # Out-of-plane momentum of incident electron (+z direction)
+    k_i_z_arr = k0 * np.sin(th_rad)
+    
+    # In-plane momentum of incident electron (+x direction)
+    k_i_x_arr = k0 * np.cos(th_rad)
+    
+    # In-plane momentum of scattered electron (+x direction)
+    k_s_x_arr = ks_arr * np.cos(th_rad - gamma_rad)
+    
+    # In-plane momentum transfer q = k_s_x - k_i_x
+    q_arr = k_s_x_arr - k_i_x_arr
+    
+    # Out-of-plane momentum of scattered electron (-z direction)
+    k_s_z_arr = ks_arr * np.sin(th_rad - gamma_rad)
+    
+    # Convert numpy arrays back to lists to match input type
+    q = q_arr.tolist()
+    k_i_z = k_i_z_arr.tolist()
+    k_s_z = k_s_z_arr.tolist()
+    
+    return (q, k_i_z, k_s_z)
+
+
+------
+
+Calculate Coulomb matrix element, $V_{\mathrm{eff}} (\tilde{Q})$, from the diffractometer angles. The effective Coulomb interaction is expressed in reciprocal space at momentum $\tilde{Q} = (q,\kappa)$ where $\kappa = k_i^z + k_s^z$
+Background 
+Coulomb matrix element in the low $q$ limit, $q \sim 0$, is given by:
+$$V_{\mathrm{eff}}(q) = \dfrac{4\pi e^2}{q^2+(k_i^z + k_s^z)^2}$$
+
+
+def MatELe(th, gamma, E0, omega):
+    '''Calculate the Coulomb matrix element in the cgs system using diffractometer angles and the electron energy. 
+    For simplicity, assume 4\pi*e^2 = 1 where e is the elementary charge. 
+    Input 
+    th, angle between the incident electron and the sample surface normal is 90-th, a list of float in the unit of degree
+    gamma, angle between the incident and scattered electron, a list of float in the unit of degree
+    E0, incident electron energy, float in the unit of eV
+    omega, energy loss, a list of float in the unit of eV
+    Output
+    V_eff: matrix element in the unit of the inverse of square angstrom, a list of float
+    '''
+    # Retrieve momentum components from q_cal
+    q, k_i_z, k_s_z = q_cal(th, gamma, E0, omega)
+    
+    # Convert lists to numpy arrays for element-wise operations
+    q_arr = np.array(q)
+    kiz_arr = np.array(k_i_z)
+    ksz_arr = np.array(k_s_z)
+    
+    # Calculate kappa = k_i_z + k_s_z
+    kappa_arr = kiz_arr + ksz_arr
+    
+    # Compute denominator: q² + kappa²
+    denominator = q_arr ** 2 + kappa_arr ** 2
+    
+    # Calculate effective Coulomb matrix element
+    v_eff_arr = 1 / denominator
+    
+    # Convert back to list format
+    V_eff = v_eff_arr.tolist()
+    
+    return V_eff
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Convert $I(\omega)$ to the density-density correlation function, $S(\omega)$. In the low $q$ limit, the cross section is proportional to $V_{\mathrm{eff}}^2S(\omega)$
+Background 
+In the low $q$ limit, M-EELS cross section is given by:
+$$\frac{\partial^2\sigma}{\partial\Omega\partial E} = \sigma_0 V_{\mathrm{eff}}^2S(\omega)$$
+where $\sigma_0$ can be approximated as a constant
+
+def S_cal(omega, I, th, gamma, E0):
+    '''Convert the experimental data to density-density correlation function, where \sigma_0 = 1 
+    Input 
+    omega, energy loss, a list of float in the unit of eV
+    I, measured cross section from the detector in the unit of Hz, a list of float
+    th, angle between the incident electron and the sample surface normal is 90-th, a list of float in the unit of degree
+    gamma, angle between the incident and scattered electron, a list of float in the unit of degree
+    E0, incident electron energy, float in the unit of eV
+    Output
+    S_omega: density-density correlation function, a list of float
+    '''
+
+    return S_omega
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+import scipy.interpolate as interpolate
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

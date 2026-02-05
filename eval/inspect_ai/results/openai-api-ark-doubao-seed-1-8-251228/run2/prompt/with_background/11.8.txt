@@ -1,0 +1,385 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Given $j$ and $d$, write a function that returns a standard basis vector $|j\rangle$ in $d$-dimensional space. If $d$ is given as an int and $j$ is given as a list $[j_1,j_2\cdots,j_n]$, then return the tensor product $|j_1\rangle|j_2\rangle\cdots|j_n\rangle$ of $d$-dimensional basis vectors. If $d$ is also given as a list $[d_1,d_2,\cdots,d_n]$, return $|j_1\rangle|j_2\rangle\cdots|j_n\rangle$ as tensor product of $d_1$, $d_2$, ..., and $d_n$ dimensional basis vectors.
+Background
+A standard basis vector $|j\rangle$ in $d$ dimensional space is
+\begin{pmatrix} 0 \\ 0 \\ \vdots \\ 1 \\ \vdots \\ 0 \end{pmatrix}
+with a 1 on the $j$-th position and 0's everywhere else. Tensor products of two vectors are given by the Kronecker product
+\begin{align}
+|a\rangle|b\rangle = \begin{pmatrix} a_1 \\ a_2 \\ \vdots \\ a_n \end{pmatrix} \otimes \begin{pmatrix} b_1 \\ b_2 \\ \vdots \\ b_n \end{pmatrix} = \begin{pmatrix} a_1b_1 \\ a_1b_2 \\ \vdots \\ a_1b_n \\ a_2b_1 \\ a_2b_2 \\ \vdots \\ a_2b_n \\ a_nb_1 \\ a_nb_2 \vdots \\ a_nb_n \end{pmatrix}
+\end{align}
+
+
+def ket(dim, j):
+    '''Input:
+    dim: int or list, dimension of the ket
+    j: int or list, the i-th basis vector
+    Output:
+    out: dim dimensional array of float, the matrix representation of the ket
+    '''
+    def single_basis(j_val, d_val):
+        vec = np.zeros(d_val, dtype=float)
+        vec[j_val] = 1.0
+        return vec
+
+    if isinstance(j, int):
+        if isinstance(dim, int):
+            out = single_basis(j, dim)
+        else:
+            raise ValueError("If dim is a list, j must also be a list of the same length.")
+    elif isinstance(j, list):
+        if isinstance(dim, int):
+            vectors = [single_basis(ji, dim) for ji in j]
+        else:
+            if len(j) != len(dim):
+                raise ValueError("j and dim lists must have the same length.")
+            vectors = [single_basis(ji, di) for ji, di in zip(j, dim)]
+        out = vectors[0]
+        for vec in vectors[1:]:
+            out = np.kron(out, vec)
+    else:
+        raise TypeError("j must be an integer or a list of integers.")
+    
+    return out
+
+
+------
+
+Using the ket function, write a function that generates a bipartite maximally entangled state where both parties are encoded by $m$-rail encoding.
+Background
+The $m$-rail encoding produces the state
+$$
+|\psi_m\rangle = \frac{1}{\sqrt{m}}(\underbrace{|00\cdots01\rangle}_{m\text{ qubits}}\underbrace{|00\cdots01\rangle}_{m\text{ qubits}} + \underbrace{|00\cdots10\rangle}_{m\text{ qubits}}\underbrace{|00\cdots10\rangle}_{m\text{ qubits}} + \cdots + \underbrace{|10\cdots00\rangle}_{m\text{ qubits}}\underbrace{|10\cdots00\rangle}_{m\text{ qubits}}).
+$$
+
+
+def multi_rail_encoding_state(rails):
+    '''Returns the density matrix of the multi-rail encoding state
+    Input:
+    rails: int, number of rails
+    Output:
+    state: 2**(2*rails) x 2**(2*rails) dimensional array of numpy.float64 type
+    '''
+    m = rails
+    # Generate all single-1 basis vectors for m qubits
+    j_lists = []
+    for k in range(m):
+        j_list = [0] * m
+        j_list[k] = 1
+        j_lists.append(j_list)
+    
+    # Accumulate the sum of |s_i>⊗|s_i> terms
+    psi = None
+    for j_list in j_lists:
+        combined_j = j_list + j_list
+        term = ket([2] * (2 * m), combined_j)
+        if psi is None:
+            psi = term
+        else:
+            psi += term
+    
+    # Normalize the state vector
+    psi /= np.sqrt(m)
+    
+    # Compute density matrix as outer product of the state with itself
+    density_matrix = np.outer(psi, psi)
+    
+    return density_matrix
+
+
+------
+
+Write a function that returns the tensor product of an arbitrary number of matrices/vectors.
+
+
+
+def tensor(*args):
+    '''Takes the tensor product of an arbitrary number of matrices/vectors.
+    Input:
+    args: any number of nd arrays of floats, corresponding to input matrices
+    Output:
+    M: the tensor product (kronecker product) of input matrices, 2d array of floats
+    '''
+    processed = []
+    for arg in args:
+        if not isinstance(arg, np.ndarray):
+            raise TypeError(f"All inputs must be numpy arrays. Received {type(arg)}.")
+        if arg.ndim == 1:
+            proc = arg.reshape(-1, 1)
+        elif arg.ndim == 2:
+            proc = arg
+        else:
+            raise ValueError(f"Input array has {arg.ndim} dimensions. Only 1D (vectors) and 2D (matrices) are allowed.")
+        processed.append(proc)
+    
+    if not processed:
+        return np.array([[1.0]], dtype=np.float64)
+    
+    result = processed[0]
+    for mat in processed[1:]:
+        result = np.kron(result, mat)
+    
+    return result
+
+
+------
+
+Write a function that applies the Kraus operators of a quantum channel on subsystems of a state with tensor function. If sys and dim are given as None, then the channel acts on the entire system of the state rho. If sys is given as a list, then the channel is applied to each subsystem in that list, and the dimension of each subsystem also must be given.
+Background
+The action of quantum channels can be written in terms of its Kraus representation:
+$$ \mathcal{N}(\rho) = \sum_i K_i \rho K_i^\dagger $$
+where $\sum_i K_i^\dagger K_i = \mathbb{I}$. The $K_i$'s are called the Kraus operators of the channel $\mathcal{N}$. If the quantum channel acts on the $i$-th subsystem of $\rho$, then the Kraus operators has the form $\mathbb{I}\otimes\cdots\otimes\mathbb{I}\otimes K_i\otimes\mathbb{I}\otimes\cdots\otimes\mathbb{I}$, where $K_i$ acts on the $i$-th subsystem and the identity acts on the remaining systems.
+
+
+def apply_channel(K, rho, sys=None, dim=None):
+    '''Applies the channel with Kraus operators in K to the state rho on
+    systems specified by the list sys. The dimensions of the subsystems of
+    rho are given by dim.
+    Inputs:
+    K: list of 2d array of floats, list of Kraus operators
+    rho: 2d array of floats, input density matrix
+    sys: list of int or None, list of subsystems to apply the channel, None means full system
+    dim: list of int or None, list of dimensions of each subsystem, None means full system
+    Output:
+    matrix: output density matrix of floats
+    '''
+    # Input validation for K
+    if not isinstance(K, list):
+        raise TypeError("K must be a list of 2D numpy arrays.")
+    if len(K) == 0:
+        raise ValueError("K must be a non-empty list of Kraus operators.")
+    for k in K:
+        if not isinstance(k, np.ndarray):
+            raise TypeError(f"Each element in K must be a numpy array. Received {type(k)}.")
+        if k.ndim != 2:
+            raise ValueError(f"Each Kraus operator must be 2D. Got {k.ndim}D array.")
+        if k.shape[0] != k.shape[1]:
+            raise ValueError("All Kraus operators must be square matrices.")
+    # Check all Kraus operators have consistent shape
+    kraus_shape = K[0].shape
+    for k in K[1:]:
+        if k.shape != kraus_shape:
+            raise ValueError("All Kraus operators must have identical dimensions.")
+    
+    # Input validation for rho
+    if not isinstance(rho, np.ndarray):
+        raise TypeError("rho must be a numpy array.")
+    if rho.ndim != 2:
+        raise ValueError(f"rho must be a 2D density matrix. Got {rho.ndim}D array.")
+    if rho.shape[0] != rho.shape[1]:
+        raise ValueError("rho must be a square matrix.")
+    
+    # Input validation for sys and dim
+    if sys is not None:
+        if dim is None:
+            raise ValueError("dim must be provided when specifying sys as a list.")
+        # Validate sys
+        if not isinstance(sys, list):
+            raise TypeError("sys must be a list of integers or None.")
+        if not all(isinstance(s, int) for s in sys):
+            raise TypeError("All elements in sys must be integers representing subsystem indices.")
+        if len(sys) != len(set(sys)):
+            raise ValueError("sys cannot contain duplicate subsystem indices.")
+        # Validate dim
+        if not isinstance(dim, list):
+            raise TypeError("dim must be a list of integers or None.")
+        if not all(isinstance(d, int) for d in dim):
+            raise TypeError("All elements in dim must be integers representing subsystem dimensions.")
+        if len(dim) == 0:
+            raise ValueError("dim must be a non-empty list.")
+        # Validate subsystem indices are within bounds
+        max_subsys_idx = len(dim) - 1
+        for s in sys:
+            if not (0 <= s <= max_subsys_idx):
+                raise ValueError(f"Subsystem index {s} is out of bounds (valid range: 0 to {max_subsys_idx}).")
+        # Validate Kraus operators match subsystem dimensions
+        kraus_dim = kraus_shape[0]
+        for s in sys:
+            if dim[s] != kraus_dim:
+                raise ValueError(
+                    f"Subsystem {s} has dimension {dim[s]}, but Kraus operators are {kraus_dim}-dimensional."
+                )
+        # Validate total dimension matches rho size
+        total_dim = np.prod(dim)
+        if total_dim != rho.shape[0]:
+            raise ValueError(
+                f"Total Hilbert space dimension from dim ({total_dim}) does not match rho size ({rho.shape[0]})."
+            )
+    else:
+        if dim is not None:
+            raise ValueError("dim must be None when sys is None (applying to full system).")
+        # Validate Kraus operators match full system dimension
+        for k in K:
+            if k.shape != rho.shape:
+                raise ValueError(
+                    f"Kraus operator shape {k.shape} does not match rho shape {rho.shape} for full system application."
+                )
+    
+    # Initialize result matrix
+    result = np.zeros_like(rho, dtype=np.float64)
+    
+    if sys is None:
+        # Apply channel to entire system directly
+        for k in K:
+            adjoint = k.conj().T
+            result += k @ rho @ adjoint
+    else:
+        # Create mapping from subsystem index to its position in sys list
+        sys_index_map = {s: idx for idx, s in enumerate(sys)}
+        # Generate all combinations of Kraus operators (one per subsystem in sys)
+        for kraus_tuple in itertools.product(K, repeat=len(sys)):
+            # Build list of operators for each subsystem
+            subsystem_ops = []
+            for i in range(len(dim)):
+                if i in sys_index_map:
+                    # Use corresponding Kraus operator from the tuple
+                    subsystem_ops.append(kraus_tuple[sys_index_map[i]])
+                else:
+                    # Identity operator for subsystems not in sys
+                    subsystem_ops.append(np.eye(dim[i], dtype=np.float64))
+            # Compute full Kraus operator via tensor product
+            full_kraus = tensor(*subsystem_ops)
+            # Calculate term and accumulate to result
+            adjoint = full_kraus.conj().T
+            result += full_kraus @ rho @ adjoint
+    
+    return result
+
+
+------
+
+Write a function that returns the Kraus operators of generalized amplitude damping channels parametrized by $\gamma$ and $N$.
+Background
+Generalized amplitude damping channels (GADC) $\mathcal{A}_{\gamma,N}$ are given by the following Kraus operators
+\begin{align}
+    K_1 &= \sqrt{1-N}\left(|0\rangle\langle0|+\sqrt{1-\gamma}|1\rangle\langle1|\right) \\
+    K_2 &= \sqrt{\gamma(1-N)}|0\rangle\langle1| \\
+    K_3 &= \sqrt{N}\left(\sqrt{1-\gamma}|0\rangle\langle0|+|1\rangle\langle1|\right) \\
+    K_4 &= \sqrt{\gamma N}|1\rangle\langle0| \\
+\end{align}
+
+
+def generalized_amplitude_damping_channel(gamma, N):
+    '''Generates the generalized amplitude damping channel.
+    Inputs:
+    gamma: float, damping parameter
+    N: float, thermal parameter
+    Output:
+    kraus: list of Kraus operators as 2x2 arrays of floats, [A1, A2, A3, A4]
+    '''
+    # Construct Kraus operator K1
+    k1 = np.sqrt(1 - N) * np.array([[1.0, 0.0], [0.0, np.sqrt(1 - gamma)]])
+    # Construct Kraus operator K2
+    k2 = np.sqrt(gamma * (1 - N)) * np.array([[0.0, 1.0], [0.0, 0.0]])
+    # Construct Kraus operator K3
+    k3 = np.sqrt(N) * np.array([[np.sqrt(1 - gamma), 0.0], [0.0, 1.0]])
+    # Construct Kraus operator K4
+    k4 = np.sqrt(gamma * N) * np.array([[0.0, 0.0], [1.0, 0.0]])
+    
+    return [k1, k2, k3, k4]
+
+
+------
+
+Write a function with and functions that returns the output of sending the $m$-rail encoded state through $m$ generalized amplitude damping channels $\mathcal{A}_{\gamma_1,N_1}$ to receiver 1 and $m$ generalized amplitude damping channels $\mathcal{A}_{\gamma_2,N_2}$ to receiver function.
+
+
+
+def output_state(rails, gamma_1, N_1, gamma_2, N_2):
+    '''Inputs:
+    rails: int, number of rails
+    gamma_1: float, damping parameter of the first channel
+    N_1: float, thermal parameter of the first channel
+    gamma_2: float, damping parameter of the second channel
+    N_2: float, thermal parameter of the second channel
+    Output
+    state: 2**(2*rails) x 2**(2*rails) dimensional array of floats, the output state
+    '''
+    # Generate initial multi-rail encoded state
+    initial_rho = multi_rail_encoding_state(rails)
+    
+    # Prepare for applying channels to receiver 1's rails
+    kraus1 = generalized_amplitude_damping_channel(gamma_1, N_1)
+    sys_receiver1 = list(range(rails))
+    dim_list = [2] * (2 * rails)
+    rho_after_receiver1 = apply_channel(kraus1, initial_rho, sys=sys_receiver1, dim=dim_list)
+    
+    # Prepare for applying channels to receiver 2's rails
+    kraus2 = generalized_amplitude_damping_channel(gamma_2, N_2)
+    sys_receiver2 = list(range(rails, 2 * rails))
+    final_rho = apply_channel(kraus2, rho_after_receiver1, sys=sys_receiver2, dim=dim_list)
+    
+    return final_rho
+
+
+------
+
+Each of the two receivers measure whether the $m$ qubits are in the one-particle sector, i.e., whether there are $m-1$ 0's and one Write a function that returns the corresponding global projector.
+
+
+
+def measurement(rails):
+    '''Returns the measurement projector
+    Input:
+    rails: int, number of rails
+    Output:
+    global_proj: ( 2**(2*rails), 2**(2*rails) ) dimensional array of floats
+    '''
+    m = rails
+    # Generate j_lists for one-particle sector of m qubits (exactly one 1 per list)
+    j_lists = []
+    for k in range(m):
+        j_list = [0] * m
+        j_list[k] = 1
+        j_lists.append(j_list)
+    
+    # Compute projector P1 for single receiver's m qubits
+    P1 = None
+    for j_list in j_lists:
+        vec = ket([2] * m, j_list)
+        outer_product = np.outer(vec, vec)
+        if P1 is None:
+            P1 = outer_product
+        else:
+            P1 += outer_product
+    
+    # Compute global projector as tensor product of P1 with itself
+    global_proj = tensor(P1, P1)
+    
+    return global_proj
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Permute the subsystems of a state according to the order specified. The dimensions of subsystems are also given as input.
+
+
+def syspermute(X, perm, dim):
+    '''Permutes order of subsystems in the multipartite operator X.
+    Inputs:
+    X: 2d array of floats with equal dimensions, the density matrix of the state
+    perm: list of int containing the desired order
+    dim: list of int containing the dimensions of all subsystems.
+    Output:
+    Y: 2d array of floats with equal dimensions, the density matrix of the permuted state
+    '''
+
+        return Y
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+import itertools
+import scipy.linalg
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

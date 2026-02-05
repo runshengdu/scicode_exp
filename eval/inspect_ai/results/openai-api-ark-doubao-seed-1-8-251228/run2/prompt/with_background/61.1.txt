@@ -1,0 +1,38 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write down the matrix, $\mathbf{B}$, that transforms $(h,k,l)$ coordinates from the reciprocal lattice system to $(q_x,q_y,q_z)$ coordinates in the right-handed Cartesian system.  Let's assume they share an identical origin, with $\mathbf{\hat{x}}^*//\mathbf{\hat{a}}^*$ and $\mathbf{\hat{z}}^*//(\mathbf{\hat{a}}^* \times \mathbf{\hat{b}}^*)$. The direct lattice parameters $(a,b,c,\alpha,\beta,\gamma)$ are given in units of Å and degree. Additionally, we will follow the convention $\mathbf{a_i} \cdot \mathbf{b_j} = \delta_{ij}$, with {$\mathbf{a_i}$} and {$\mathbf{b_i}$} representing the primitive vectors of crystal lattice and reciprocal lattice respectively
+Background
+The reciprocal lattice vectors {$\mathbf{b}_i$} are given by:
+$$\mathbf{b}_i = \frac{\mathbf{a}_j\times\mathbf{a}_k}{\mathbf{a}_i\cdot(\mathbf{a}_j\times\mathbf{a}_k)}$$
+
+def Bmat(pa):
+    '''Calculate the B matrix.
+    Input
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    Output
+    B: a 3*3 matrix, float
+    '''
+
+    return B
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

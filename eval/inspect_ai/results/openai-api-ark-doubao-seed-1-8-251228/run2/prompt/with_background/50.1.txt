@@ -1,0 +1,44 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Use Monte Carlo method to find the thermal equilibrium state given an inital state and given interaction coefficients $J_{ij}$. If using functions from np.random, only "randint" and "rand" are allowed in this part.
+Background
+Considered as the simpliest model of spin glass, the Sherrington-Kirkpatrick Hamiltonian is given by:
+$$
+H_{SK} = -\sum_{i < j} J_{ij}\sigma_i \sigma_j
+$$
+assuming the absence of a external magtetic field and full connection between all the spins.
+In this Monte Carlo simulation, we should use Metropolis-Hastings algorithm to find the equilibrium state.
+
+def find_equilibrium(spins, N, T, J, num_steps):
+    '''Find the thermal euilibrium state of a given spin system
+    Input:
+    spins: starting spin state, 1D array of 1 and -1
+    N: size of spin system, int
+    T: temprature, float
+    J: interaction matrix, 2D array of floats
+    num_steps: number of sampling steps per spin in the Monte Carlo simulation, int
+    Output:
+    spins: final spin state after Monte Carlo simulation, 1D array of 1 and -1
+    '''
+
+    return spins
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

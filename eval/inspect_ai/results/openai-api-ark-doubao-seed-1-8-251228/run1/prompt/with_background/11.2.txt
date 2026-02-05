@@ -1,0 +1,51 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Given $j$ and $d$, write a function that returns a standard basis vector $|j\rangle$ in $d$-dimensional space. If $d$ is given as an int and $j$ is given as a list $[j_1,j_2\cdots,j_n]$, then return the tensor product $|j_1\rangle|j_2\rangle\cdots|j_n\rangle$ of $d$-dimensional basis vectors. If $d$ is also given as a list $[d_1,d_2,\cdots,d_n]$, return $|j_1\rangle|j_2\rangle\cdots|j_n\rangle$ as tensor product of $d_1$, $d_2$, ..., and $d_n$ dimensional basis vectors.
+Background
+A standard basis vector $|j\rangle$ in $d$ dimensional space is
+\begin{pmatrix} 0 \\ 0 \\ \vdots \\ 1 \\ \vdots \\ 0 \end{pmatrix}
+with a 1 on the $j$-th position and 0's everywhere else. Tensor products of two vectors are given by the Kronecker product
+\begin{align}
+|a\rangle|b\rangle = \begin{pmatrix} a_1 \\ a_2 \\ \vdots \\ a_n \end{pmatrix} \otimes \begin{pmatrix} b_1 \\ b_2 \\ \vdots \\ b_n \end{pmatrix} = \begin{pmatrix} a_1b_1 \\ a_1b_2 \\ \vdots \\ a_1b_n \\ a_2b_1 \\ a_2b_2 \\ \vdots \\ a_2b_n \\ a_nb_1 \\ a_nb_2 \vdots \\ a_nb_n \end{pmatrix}
+\end{align}
+
+
+print('Hello, World!')
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Using the ket function, write a function that generates a bipartite maximally entangled state where both parties are encoded by $m$-rail encoding.
+Background
+The $m$-rail encoding produces the state
+$$
+|\psi_m\rangle = \frac{1}{\sqrt{m}}(\underbrace{|00\cdots01\rangle}_{m\text{ qubits}}\underbrace{|00\cdots01\rangle}_{m\text{ qubits}} + \underbrace{|00\cdots10\rangle}_{m\text{ qubits}}\underbrace{|00\cdots10\rangle}_{m\text{ qubits}} + \cdots + \underbrace{|10\cdots00\rangle}_{m\text{ qubits}}\underbrace{|10\cdots00\rangle}_{m\text{ qubits}}).
+$$
+
+def multi_rail_encoding_state(rails):
+    '''Returns the density matrix of the multi-rail encoding state
+    Input:
+    rails: int, number of rails
+    Output:
+    state: 2**(2*rails) x 2**(2*rails) dimensional array of numpy.float64 type
+    '''
+
+    return state
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+import itertools
+import scipy.linalg
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

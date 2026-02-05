@@ -1,0 +1,45 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a function evaluates value of a set of b-spline basis functions.
+Background:
+B-splines can be constructed by means of the Cox-de Boor recursion formula. We start with the B-splines of degree $p=0$, i.e. piecewise constant polynomials.
+$$
+B_{i, 0}(t):= \begin{cases}1 & \text { if } t_i \leq t<t_{i+1}, \\ 0 & \text { otherwise. }\end{cases}
+$$
+
+The higher $(p+1)$-degree $\mathrm{B}$-splines are defined by recursion
+$$
+B_{i, p}(t):=\frac{t-t_i}{t_{i+p}-t_i} B_{i, p-1}(t)+\frac{t_{i+p+1}-t}{t_{i+p+1}-t_{i+1}} B_{i+1, p-1}(t) .
+$$
+
+def Bspline(xi, i, p, Xi):
+    '''Inputs:
+    xi : knot index, integer
+    i : polynomial index , integer
+    p : polynomial degree of basis function , integer
+    Xi : knot vector, 1d array of arbitrary size
+    Outputs:
+    1d array of size 1，2 or 3
+    '''
+
+        return alpha * Bspline(xi, i, p-1, Xi) + beta * Bspline(xi, i+1, p-1, Xi)
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

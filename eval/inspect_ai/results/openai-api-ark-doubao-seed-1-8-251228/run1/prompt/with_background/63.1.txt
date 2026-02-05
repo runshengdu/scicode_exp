@@ -1,0 +1,76 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a function that sets up a price-time grid to perform finite-difference method to solve for Black-Scholes Equation given number of price grid, number of time grid, min and max price of stock, low and max bounds for the price grid, and strike price. Give me price grid, time grid, and corresponding step size
+Background
+
+Black-Scholes Equation
+Through hedging with the underlying stock and bond, one can effectively mitigate the impact of the Brownian motion component of the equation, which serves as the primary source of uncertainty of original applications of Ito's lemma without hedging. After some steps, we arrive to
+
+$$
+\frac{\partial V(s,t)}{\partial t} + rs\frac{\partial V(s,t)}{\partial s} + \frac{1}{2}\sigma^2 s^2 \frac{\partial^2 V(s,t)}{\partial s^2} -rV(t,s) = 0
+$$
+Here,<br>
+V: Option price <br>
+s: Underlying stock price <br>
+t: time <br>
+r: risk-free interest rate (interest when you buy bonds) <br>
+$\sigma$: volatility of underlying stock<br>
+
+Assumptions
+- European Options (you can only excercise the right of your option at the termination date)
+- No arbitrage (can't take risk-free benefit more than $r$)
+- Frictionless market (low transaction cost)
+- Stock prices follow log normal distribution (to avoid negative values)
+
+Using these assumptions, it is convenient and logical to define a log stock price variable $p=\log s$ so that the equation become<br>
+
+$$
+\frac{\partial V(p,t)}{\partial t}+\big(r-\frac{1}{2}\sigma^2\big)\frac{\partial V(p,t)}{\partial p}+\frac{1}{2}\sigma^2 \frac{\partial^2 V(p,t)}{\partial p^2}-r V(p,t) = 0
+$$
+
+We will work with the this version of Black Scholes
+
+Theoretically, option price can be ranging from 0 to $\infty$, but we need to restrict it to plausible range to compute on a finite grid. Finite difference would be like:
+For the log-adjusted Black Scholes equation, we can use forward euler time stepping, central difference for the price derivative terms. Then it becomes
+$$
+\frac{V^{n+1}_j-V^n_j}{\Delta t}+\big(r-\frac{1}{2}\sigma^2\big)\frac{V^{n}_{j+1}-V^n_{j-1}}{2\Delta p}+\frac{1}{2}\sigma^2 \frac{V^{n}_{j+1}+V^n_{j-1}-2V^n_j}{\Delta p^2}-rV^n_j = 0
+$$
+
+def initialize_grid(price_step, time_step, strike, max_price, min_price):
+    '''Initializes the grid for pricing a European call option.
+    Inputs:
+    price_step: The number of steps or intervals in the price direction. (int)
+    time_step: The number of steps or intervals in the time direction. (int)
+    strike: The strike price of the European call option. (float)
+    max_price: we can't compute infinity as bound, so set a max bound. 5 * strike price is generous (float)
+    min_price: avoiding 0 as a bound due to numerical instability, (1/5) * strike price is generous (float)
+    Outputs:
+    p: An array containing the grid points for prices. It is calculated using np.linspace function between p_min and p_max.  shape: price_step * 1
+    dp: The spacing between adjacent price grid points. (float)
+    T: An array containing the grid points for time. It is calculated using np.linspace function between 0 and 1. shape: time_step * 1
+    dt: The spacing between adjacent time grid points. (float)
+    '''
+
+    return p, dp, T, dt
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+from scipy import sparse
+from scipy.sparse.linalg import spsolve
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

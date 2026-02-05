@@ -1,0 +1,163 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Write a Python function to generate a monolayer graphene geometry. Inputs are `s` sliding distance in the y-direction, `a` lattice constants, `z` z-coordinate, and `n` number of lattice sites to generate in negative and positive directions for both x and y axes. Make sure the armchair direction is along the y-axis and the zigzag direction is along the x-axis.
+
+
+
+def generate_monolayer_graphene(s, a, z, n):
+    '''Generate the geometry of monolayer graphene.
+    Args:
+        s (float): Horizontal in-plane sliding distance.
+        a (float): Lattice constant.
+        z (float): z-coordinate
+        n (int): supercell size
+    Returns:
+        atoms (np.array): Array containing the x, y, and z coordinates of the atoms.
+    '''
+    # Generate grid of indices for supercell expansion
+    i = np.arange(-n, n + 1)
+    j = np.arange(-n, n + 1)
+    i_grid, j_grid = np.meshgrid(i, j, indexing='ij')
+    
+    # Calculate coordinates for sublattice A
+    x_a = (a * np.sqrt(3) / 2) * (i_grid + j_grid)
+    y_a = (a / 2) * (j_grid - i_grid) + s
+    z_a = np.full_like(x_a, z)
+    
+    # Calculate coordinates for sublattice B (shifted in x-direction relative to A)
+    x_b = x_a + (a * np.sqrt(3) / 3)
+    y_b = y_a
+    z_b = z_a
+    
+    # Reshape and concatenate both sublattices into a single array
+    atoms_a = np.stack([x_a.ravel(), y_a.ravel(), z_a.ravel()], axis=1)
+    atoms_b = np.stack([x_b.ravel(), y_b.ravel(), z_b.ravel()], axis=1)
+    atoms = np.concatenate([atoms_a, atoms_b], axis=0)
+    
+    return atoms
+
+
+------
+
+Write a Python function `assign_normals` to assign a normal vector for each atom. A normal vector at an atom is defined by averaging the 3 normalized cross products of vectors from this atom to its 3 nearest neighbors. Input is `xyzs` of shape `(natoms, 3)`. Return the normalized normal vectors of shape `(natoms,)`. Make sure that this vector is pointing in the negative z-direction for atoms with z > 0, and in the positive z-direction for atoms with z < 0. Correct normal vectors in the wrong direction by multiplying by -
+
+
+
+def assign_normals(xyzs):
+    '''Assign normal vectors on the given atoms
+    Args:
+        xyzs (np.array): Shape (natoms, 3)
+    Returns:
+        normed_cross_avg (np.array): Shape (natoms, 3)
+    '''
+    natoms = xyzs.shape[0]
+    normals = np.zeros((natoms, 3), dtype=xyzs.dtype)
+    eps = 1e-12  # Small tolerance for floating point comparisons
+    
+    for i in range(natoms):
+        # Efficiently compute squared distances to all other atoms
+        xyz_i = xyzs[i]
+        dist_sq = np.sum(xyzs**2, axis=1) + np.sum(xyz_i**2) - 2 * xyzs.dot(xyz_i)
+        
+        # Get indices of three nearest neighbors (excluding self)
+        sorted_indices = np.argsort(dist_sq)
+        nn_indices = sorted_indices[1:4]
+        
+        # Calculate vectors from current atom to its nearest neighbors
+        v1 = xyzs[nn_indices[0]] - xyz_i
+        v2 = xyzs[nn_indices[1]] - xyz_i
+        v3 = xyzs[nn_indices[2]] - xyz_i
+        
+        # Compute cross products for all unordered pairs of neighbor vectors
+        cp1 = np.cross(v1, v2)
+        cp2 = np.cross(v1, v3)
+        cp3 = np.cross(v2, v3)
+        
+        # Normalize each cross product to unit vectors
+        def normalize_vector(vec):
+            vec_norm = la.norm(vec)
+            return vec / vec_norm if vec_norm > eps else np.array([0.0, 0.0, 1.0])
+        
+        u1 = normalize_vector(cp1)
+        u2 = normalize_vector(cp2)
+        u3 = normalize_vector(cp3)
+        
+        # Average the three normalized cross products
+        avg_u = (u1 + u2 + u3) / 3
+        
+        # Normalize the average to get initial normal vector
+        avg_norm = la.norm(avg_u)
+        initial_normal = avg_u / avg_norm if avg_norm > eps else np.array([0.0, 0.0, 1.0])
+        
+        # Correct direction based on atom's z-coordinate
+        atom_z = xyz_i[2]
+        if atom_z > eps:
+            # Ensure normal points in negative z-direction
+            if initial_normal[2] > 0:
+                initial_normal *= -1
+        elif atom_z < -eps:
+            # Ensure normal points in positive z-direction
+            if initial_normal[2] < 0:
+                initial_normal *= -1
+        
+        normals[i] = initial_normal
+    
+    return normals
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a Python function for replusive part of the total KC potential: $$V_{i j}=e^{-\lambda\left(r_{i j}-z_0\right)}\left[C+f\left(\rho_{i j}\right)+f\left(\rho_{j i}\right)\right]-A\left(\frac{r_{i j}}{z_0}\right)^{-6}$$ Inputs are distance vectors from atom i to atom j `r_ij` of shape (npairs, 3), normal vectors of the top layer `n_i`, normal vectors of the bottom layer `n_j`, and the following KC parameters `z0`, `C`, `C0`, `C2`, `C4`, `delta`, `lamda`. The transverse distance `rho` is defined as 
+
+\begin{align}
+\rho_{ij}^2 &= r_{ij}^2 - (\mathbf{r}_{ij} \cdot \mathbf{n}_i)^2. \nonumber \\
+\rho_{ji}^2 &= r_{ij}^2 - (\mathbf{r}_{ij} \cdot \mathbf{n}_j)^2. \nonumber \\
+\end{align}
+
+and
+
+\begin{align}
+f(\rho) &= e^{-(\rho/\delta)^2} \left[ C_0  + C_2 \left(\frac{\rho}{\delta}\right)^{2} + C_4 \left(\frac{\rho}{\delta}\right)^{4}\right]
+\end{align}
+Background
+
+The repulsive part of KC potential:
+\begin{align}
+V_{ij} = e^{-\lambda(r_{ij} - z_0)} [C + f(\rho_{ij}) + f(\rho_{ji})] 
+\end{align}
+
+def potential_repulsive(r_ij, n_i, n_j, z0, C, C0, C2, C4, delta, lamda):
+    '''Define repulsive potential.
+    Args:
+        r_ij: (nmask, 3)
+        n_i: (nmask, 3)
+        n_j: (nmask, 3)
+        z0 (float): KC parameter
+        C (float): KC parameter
+        C0 (float): KC parameter
+        C2 (float): KC parameter
+        C4 (float): KC parameter
+        delta (float): KC parameter
+        lamda (float): KC parameter
+    Returns:
+        pot (nmask): values of repulsive potential for the given atom pairs.
+    '''
+
+    return pot
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+import numpy.linalg as la
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

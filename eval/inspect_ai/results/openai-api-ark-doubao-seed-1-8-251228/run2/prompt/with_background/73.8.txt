@@ -1,0 +1,494 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Write down the matrix, $\mathbf{B}$, that transforms $(h,k,l)$ coordinates from the reciprocal lattice system to $(q_x,q_y,q_z)$ coordinates in the right-handed Cartesian system.  Let's assume they share an identical origin, with $\mathbf{\hat{x}}^*//\mathbf{\hat{a}}^*$ and $\mathbf{\hat{z}}^*//(\mathbf{\hat{a}}^* \times \mathbf{\hat{b}}^*)$. The direct lattice parameters $(a,b,c,\alpha,\beta,\gamma)$ are given in units of Å and degree. Additionally, we will follow the convention $\mathbf{a_i} \cdot \mathbf{b_j} = \delta_{ij}$, with {$\mathbf{a_i}$} and {$\mathbf{b_i}$} representing the primitive vectors of crystal lattice and reciprocal lattice respectively [<u>duplicate Xray_conversion-I step </u>]
+Background
+The reciprocal lattice vectors {$\mathbf{b}_i$} are given by:
+$$\mathbf{b}_i = \frac{\mathbf{a}_j\times\mathbf{a}_k}{\mathbf{a}_i\cdot(\mathbf{a}_j\times\mathbf{a}_k)}$$
+
+
+def Bmat(pa):
+    '''Calculate the B matrix.
+    Input
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    Output
+    B: a 3*3 matrix, float
+    '''
+    a, b, c, alpha_deg, beta_deg, gamma_deg = pa
+    # Convert angles from degrees to radians
+    alpha = np.radians(alpha_deg)
+    beta = np.radians(beta_deg)
+    gamma = np.radians(gamma_deg)
+    
+    # Construct direct lattice vectors in Cartesian coordinates
+    a1 = np.array([a, 0.0, 0.0])
+    a2_x = b * np.cos(gamma)
+    a2_y = b * np.sin(gamma)
+    a2 = np.array([a2_x, a2_y, 0.0])
+    
+    a3_x = c * np.cos(beta)
+    numerator_a3y = np.cos(alpha) - np.cos(beta) * np.cos(gamma)
+    denominator_a3y = np.sin(gamma)
+    a3_y = c * numerator_a3y / denominator_a3y
+    a3_z_sq = c**2 - a3_x**2 - a3_y**2
+    a3_z = np.sqrt(a3_z_sq)
+    a3 = np.array([a3_x, a3_y, a3_z])
+    
+    # Calculate unit cell volume
+    V = np.dot(a1, np.cross(a2, a3))
+    
+    # Compute reciprocal lattice vectors
+    b1 = np.cross(a2, a3) / V
+    b2 = np.cross(a3, a1) / V
+    b3 = np.cross(a1, a2) / V
+    
+    # Construct B matrix with reciprocal vectors as columns
+    B = np.column_stack((b1, b2, b3))
+    
+    return B
+
+
+------
+
+The detector plane has roll, pitch, and yaw angles. In the lab coordinate system, yaw $\Psi$ represents rotation along the $+\mathbf{\hat{z}}$ axis, pitch $\Theta$ along the $+\mathbf{\hat{y}}$ axis, and roll $\Phi$ along the $+\mathbf{\hat{x}}$ axis, with the rotation sequence as yaw $\rightarrow$ pitch $\rightarrow$ roll. Write down the momentum transfer $\vec{Q} = \vec{k_s} - \vec{k_i}$ at detector pixel $(x_{det},y_{det})$ in the lab coordinate system, where $\vec{k_s}$ and $\vec{k_i}$ are scattered and incident beam respectively. In the lab coordinate, $+\mathbf{\hat{x}}$ aligns with the incident beam direction, while $+\mathbf{\hat{z}}$ points vertically upwards. In the detector coordinate, $\mathbf{\hat{x}}_{det}//-\mathbf{\hat{y}}$ and $\mathbf{\hat{y}}_{det}//-\mathbf{\hat{z}}$ if detector plane is normal to the incident beam
+Background
+The detector rotation matrix is defined as $\mathbf{D} = R_{\mathbf{\hat{x}}}(\Phi)R_{\mathbf{\hat{y}}}(\Theta)R_{\mathbf{\hat{z}}}(\Psi)$
+
+
+def q_cal_p(p, b_c, det_d, p_s, wl, yaw, pitch, roll):
+    '''Calculate the momentum transfer Q at detector pixel (x,y). Here we use the convention of k=1/\lambda,
+    k and \lambda are the x-ray momentum and wavelength respectively
+    Input
+    p: detector pixel (x,y), a tuple of two integer
+    b_c: incident beam center at detector pixel (xc,yc), a tuple of float
+    det_d: sample distance to the detector, float in the unit of mm
+    p_s: detector pixel size, and each pixel is a square, float in the unit of mm
+    wl: X-ray wavelength, float in the unit of angstrom
+    yaw,pitch,roll: rotation angles of the detector, float in the unit of degree
+    Output
+    Q: a 3x1 matrix, float in the unit of inverse angstrom
+    '''
+    x, y = p
+    xc, yc = b_c
+    
+    # Calculate offset from beam center in millimeters
+    dx = (x - xc) * p_s
+    dy = (y - yc) * p_s
+    
+    # Convert rotation angles from degrees to radians
+    yaw_rad = np.radians(yaw)
+    pitch_rad = np.radians(pitch)
+    roll_rad = np.radians(roll)
+    
+    # Define individual rotation matrices (active rotation, right-handed)
+    # Rotation around +z axis (yaw)
+    cos_psi, sin_psi = np.cos(yaw_rad), np.sin(yaw_rad)
+    Rz = np.array([
+        [cos_psi, -sin_psi, 0.0],
+        [sin_psi, cos_psi, 0.0],
+        [0.0, 0.0, 1.0]
+    ])
+    
+    # Rotation around +y axis (pitch)
+    cos_theta, sin_theta = np.cos(pitch_rad), np.sin(pitch_rad)
+    Ry = np.array([
+        [cos_theta, 0.0, sin_theta],
+        [0.0, 1.0, 0.0],
+        [-sin_theta, 0.0, cos_theta]
+    ])
+    
+    # Rotation around +x axis (roll)
+    cos_phi, sin_phi = np.cos(roll_rad), np.sin(roll_rad)
+    Rx = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, cos_phi, -sin_phi],
+        [0.0, sin_phi, cos_phi]
+    ])
+    
+    # Combined rotation matrix (sequence: yaw -> pitch -> roll)
+    D = Rx @ Ry @ Rz
+    
+    # Offset vector from beam center to pixel in unrotated detector frame (lab coordinates)
+    offset_unrot = np.array([0.0, -dx, -dy])
+    
+    # Rotate the offset vector to account for detector rotation
+    offset_rot = D @ offset_unrot
+    
+    # Calculate pixel position in lab coordinates (mm)
+    pixel_pos = np.array([det_d, 0.0, 0.0]) + offset_rot
+    
+    # Unit vector in the direction of the scattered beam
+    s_magnitude = np.linalg.norm(pixel_pos)
+    s = pixel_pos / s_magnitude
+    
+    # Compute wavevectors (k = 1/λ, unit: 1/Å)
+    k = 1.0 / wl
+    k_i = np.array([k, 0.0, 0.0])
+    k_s = k * s
+    
+    # Calculate momentum transfer Q and reshape to 3x1 matrix
+    Q = (k_s - k_i).reshape(3, 1)
+    
+    return Q
+
+
+------
+
+In a four-circle diffractometer with a fixed area-detector, we have three degrees of freedom to rotate the sample: $\phi$, $\chi$ and $\theta$. When $\phi$ = $\chi$ = $\theta$ = 0, the rotation axes for these angles are along $+\mathbf{\hat{z}}$, $+\mathbf{\hat{x}}$ and $-\mathbf{\hat{y}}$, respetively. The rotation sequence is $\phi$ $\rightarrow$ $\chi$ $\rightarrow$ $\theta$. During experiments, we rotate $\theta$ at fixed $\phi$ and $\chi$, capturing a diffraction pattern snapshot at each frame. For two non-parallel Bragg reflections, denoted as the primary $(h_1,k_1,l_1)$ and secondary $(h_2,k_2,l_2)$ reflections, we observe corresponding peaks on the detector at positions $(x_1,y_1)$ in frame $z_1$ and $(x_2,y_2)$ in frame $z_2$. Write down the orthogonal unit-vector triple {$\mathbf{\hat{t}}_i^c$}, where $\mathbf{\hat{t}}_1^c//q_1$, $\mathbf{\hat{t}}_3^c//(q_1 \times q_2)$ and $q_i$ represents the Bragg reflection in Cartesian coordiantes. Similarly, write down {$\mathbf{\hat{t}}_i^g$}, where $\mathbf{\hat{t}}_1^g//Q_1$, $\mathbf{\hat{t}}_3^g//(Q_1 \times Q_2)$ and $Q_i$ represents the momentum transfer before rotating the crystal.
+Background
+The diffractometer rotation matrix is defined as $\mathbf{G} = R_{\mathbf{\hat{y}}}(-\theta)R_{\mathbf{\hat{x}}}(\chi)R_{\mathbf{\hat{z}}}(\phi)$
+
+
+
+------
+
+Write down the orientation matrix $\mathbf{U}$ as the unitary transformation from the bases {$\mathbf{\hat{t}}_i^c$} to {$\mathbf{\hat{t}}_i^g$}
+Background
+To orient the crystal, we determine the directions of the reciprocal lattice primitive vectors in the lab coordinate system. We define the Cartesian coordinate system in reciprocal space to be the same as the lab coordinate system.  Our goal is to rotate the reciprocal lattice so that it aligns with our observed diffraction pattern. The rotation matrix used for this purpose is the orientation matrix $\mathbf{U}$, given by:
+$$\mathbf{T}_g = \mathbf{U}\mathbf{T}_c$$
+where $\mathbf{T}_c$ represents the matrix with columns {$\mathbf{\hat{t}}_i^c$} and similarly for $\mathbf{T}_g$.
+
+
+def Umat(t_c, t_g):
+    '''Write down the orientation matrix which transforms from bases t_c to t_g
+    Input
+    t_c, tuple with three elements, each element is a 3x1 matrix, float
+    t_g, tuple with three elements, each element is a 3x1 matrix, float
+    Output
+    U: 3x3 orthogonal matrix, float
+    '''
+    # Construct matrices with basis vectors as columns
+    T_c = np.column_stack(t_c)
+    T_g = np.column_stack(t_g)
+    
+    # Calculate orientation matrix using orthonormal basis property (inverse = transpose)
+    U = T_g @ T_c.T
+    
+    return U
+
+
+------
+
+Utilizing the previously calculated $\mathbf{U}$ and $\mathbf{B}$ matrices, transform the pixel coordinates $(x_{det},y_{det})$ at frame $z$ to reciprocal space coordinates $(h,k,l)$
+Background
+Employ step to calculate the momentum transfer $\vec{Q}$
+2. Utilize $\mathbf{G}$ matrix obtained from step to rotate $\vec{Q}$ back to its orientation before any diffractometer rotation
+3. Express the new rotated $\vec{Q}^{\prime} = \mathbf{U}\mathbf{B}\mathbf{\tilde{q}}$, where $\mathbf{\tilde{q}} = (h,k,l)$ is in the reciprocal lattice coordinate system
+
+In summary, $(h,k,l) = \mathbf{\tilde{q}} = (\mathbf{U}\mathbf{B})^{-1}\mathbf{G}^{-1}\vec{Q}$
+
+
+def get_hkl_p(p, z, b_c, det_d, p_s, wl, yaw, pitch, roll, pa, H1, H2, p1, p2, z1, z2, z_s, chi, phi):
+    '''Convert pixel (x,y) at frame z to reciprocal space (h,k,l)
+    Input
+    p: detector pixel (x,y), a tuple of two integer
+    z: frame number, integer
+    b_c: incident beam center at detector pixel (xc,yc), a tuple of float
+    det_d: sample distance to the detector, float in the unit of mm
+    p_s: detector pixel size, and each pixel is a square, float in the unit of mm
+    wl: X-ray wavelength, float in the unit of angstrom
+    yaw,pitch,roll: rotation angles of the detector, float in the unit of degree
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    H1 = (h1,k1,l1),primary reflection, h1,k1,l1 is integer
+    H2 = (h2,k2,l2),secondary reflection, h2,k2,l2 is integer
+    p1: detector pixel (x1,y1), a tuple of two integer
+    p2: detector pixel (x2,y2), a tuple of two integer
+    z1,z2: frame number, integer
+    z_s: step size in the rotation, float in the unit of degree
+    chi,phi: diffractometer angles, float in the unit of degree
+    Output
+    q: 3x1 matrix, float
+    '''
+    # Step 1: Calculate B matrix using direct lattice parameters
+    B = Bmat(pa)
+    
+    # Step 2: Compute crystal Cartesian coordinates for primary/secondary reflections
+    H1_arr = np.array(H1).reshape(3, 1)
+    q1 = B @ H1_arr
+    H2_arr = np.array(H2).reshape(3, 1)
+    q2 = B @ H2_arr
+    
+    # Step 3: Build orthonormal basis {t_c} from crystal Cartesian vectors
+    # t1_c parallel to q1
+    t1_c = q1 / np.linalg.norm(q1)
+    # t3_c parallel to q1 × q2
+    cross_q1q2 = np.cross(q1.flatten(), q2.flatten()).reshape(3, 1)
+    t3_c = cross_q1q2 / np.linalg.norm(cross_q1q2)
+    # t2_c completes right-handed orthonormal triple
+    t2_c = np.cross(t3_c.flatten(), t1_c.flatten()).reshape(3, 1)
+    t_c = (t1_c, t2_c, t3_c)
+    
+    # Step 4: Convert diffractometer angles to radians
+    chi_rad = np.radians(chi)
+    phi_rad = np.radians(phi)
+    
+    # Step 5: Precompute common rotation matrices for diffractometer
+    # Rotation around +x axis (chi)
+    cos_chi, sin_chi = np.cos(chi_rad), np.sin(chi_rad)
+    Rx_chi = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, cos_chi, -sin_chi],
+        [0.0, sin_chi, cos_chi]
+    ])
+    # Rotation around +z axis (phi)
+    cos_phi, sin_phi = np.cos(phi_rad), np.sin(phi_rad)
+    Rz_phi = np.array([
+        [cos_phi, -sin_phi, 0.0],
+        [sin_phi, cos_phi, 0.0],
+        [0.0, 0.0, 1.0]
+    ])
+    
+    # Step 6: Calculate Q1 (pre-rotation momentum transfer for primary reflection)
+    theta1_deg = z1 * z_s
+    theta1_rad = np.radians(theta1_deg)
+    cos_theta1, sin_theta1 = np.cos(theta1_rad), np.sin(theta1_rad)
+    # Rotation around -y axis (theta1)
+    Ry_minus_theta1 = np.array([
+        [cos_theta1, 0.0, -sin_theta1],
+        [0.0, 1.0, 0.0],
+        [sin_theta1, 0.0, cos_theta1]
+    ])
+    G1 = Ry_minus_theta1 @ Rx_chi @ Rz_phi
+    # Measured momentum transfer in lab coordinates
+    Q1_measured = q_cal_p(p1, b_c, det_d, p_s, wl, yaw, pitch, roll)
+    # Rotate back to pre-rotation orientation
+    Q1 = G1.T @ Q1_measured
+    
+    # Step 7: Calculate Q2 (pre-rotation momentum transfer for secondary reflection)
+    theta2_deg = z2 * z_s
+    theta2_rad = np.radians(theta2_deg)
+    cos_theta2, sin_theta2 = np.cos(theta2_rad), np.sin(theta2_rad)
+    Ry_minus_theta2 = np.array([
+        [cos_theta2, 0.0, -sin_theta2],
+        [0.0, 1.0, 0.0],
+        [sin_theta2, 0.0, cos_theta2]
+    ])
+    G2 = Ry_minus_theta2 @ Rx_chi @ Rz_phi
+    Q2_measured = q_cal_p(p2, b_c, det_d, p_s, wl, yaw, pitch, roll)
+    Q2 = G2.T @ Q2_measured
+    
+    # Step 8: Build orthonormal basis {t_g} from pre-rotation momentum transfers
+    t1_g = Q1 / np.linalg.norm(Q1)
+    cross_Q1Q2 = np.cross(Q1.flatten(), Q2.flatten()).reshape(3, 1)
+    t3_g = cross_Q1Q2 / np.linalg.norm(cross_Q1Q2)
+    t2_g = np.cross(t3_g.flatten(), t1_g.flatten()).reshape(3, 1)
+    t_g = (t1_g, t2_g, t3_g)
+    
+    # Step 9: Calculate orientation matrix U
+    U = Umat(t_c, t_g)
+    
+    # Step 10: Process input pixel to get (h,k,l)
+    # Calculate diffractometer rotation matrix for current frame z
+    theta_z_deg = z * z_s
+    theta_z_rad = np.radians(theta_z_deg)
+    cos_theta_z, sin_theta_z = np.cos(theta_z_rad), np.sin(theta_z_rad)
+    Ry_minus_thetaz = np.array([
+        [cos_theta_z, 0.0, -sin_theta_z],
+        [0.0, 1.0, 0.0],
+        [sin_theta_z, 0.0, cos_theta_z]
+    ])
+    G_z = Ry_minus_thetaz @ Rx_chi @ Rz_phi
+    # Measured momentum transfer for input pixel
+    Q_measured = q_cal_p(p, b_c, det_d, p_s, wl, yaw, pitch, roll)
+    # Rotate back to pre-rotation orientation
+    Q_prime = G_z.T @ Q_measured
+    
+    # Step 11: Convert to reciprocal lattice coordinates (h,k,l)
+    UB = U @ B
+    inv_UB = np.linalg.inv(UB)
+    hkl = inv_UB @ Q_prime
+    
+    return hkl
+
+
+------
+
+Calculate $d^* = 1/d$, where $d$ is the lattice spacing of the reciprocal lattice for a given $(h,k,l)$
+Background
+According to Bragg's law:
+$$\lambda = 2d\sin(\theta)$$
+where $\lambda$ is the x-ray wavelength and $\theta$ is the glancing angle
+
+
+def ringdstar(pa, polar_max, wl):
+    '''List all d*<d*_max and the corresponding (h,k,l). d*_max is determined by the maximum scattering angle
+    and the x-ray wavelength
+    Input
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    polar_max: maximum scattering angle, i.e. maximum angle between the x-ray beam axis
+               and the powder ring, float in the unit of degree
+    wl: X-ray wavelength, float in the unit of angstrom
+    Output
+    ringhkls: a dictionary, key is d* and each item is a sorted list with element of corresponding (h,k,l)
+    '''
+    # Calculate B matrix using provided Bmat function
+    B = Bmat(pa)
+    
+    # Compute d*_max using Bragg's law
+    polar_max_rad = np.radians(polar_max)
+    dstar_max = 2 * np.sin(polar_max_rad / 2) / wl
+    
+    # Construct quadratic form matrix for squared d* calculation
+    C = B.T @ B
+    
+    # Determine maximum range of h, k, l using minimal eigenvalue of C
+    eig_vals = np.linalg.eigvalsh(C)
+    lambda_min = np.min(eig_vals)
+    
+    if lambda_min <= 1e-12:
+        max_abs = 0
+    else:
+        max_abs = int(np.floor(dstar_max / np.sqrt(lambda_min))) + 1
+    
+    ringhkls = {}
+    
+    # Iterate over all possible integer triples (h, k, l)
+    for h in range(-max_abs, max_abs + 1):
+        for k in range(-max_abs, max_abs + 1):
+            for l in range(-max_abs, max_abs + 1):
+                # Skip reciprocal lattice origin (not a Bragg reflection)
+                if h == 0 and k == 0 and l == 0:
+                    continue
+                
+                # Calculate squared d* using quadratic form for efficiency
+                v = np.array([h, k, l])
+                dstar_sq = v @ C @ v
+                
+                # Skip if d* >= d*_max (using squared values to avoid sqrt)
+                if dstar_sq >= dstar_max ** 2 - 1e-12:
+                    continue
+                
+                dstar = np.sqrt(dstar_sq)
+                
+                # Check if this d* is already in the dictionary (within tolerance)
+                found = False
+                for key in list(ringhkls.keys()):
+                    if np.isclose(dstar, key, atol=1e-9):
+                        ringhkls[key].append((h, k, l))
+                        found = True
+                        break
+                if not found:
+                    ringhkls[dstar] = [(h, k, l)]
+    
+    # Sort each list of (h,k,l) tuples lexicographically
+    for key in ringhkls:
+        ringhkls[key] = sorted(ringhkls[key])
+    
+    return ringhkls
+
+
+------
+
+Determine the possible $(h,k,l)$ values for a pair of Bragg reflections $(Q_1,Q_2)$ by matching their $d^*$ values, corresponding to the peaks on the detector $(x_1,y_1)$ and $(x_2,y_2)$
+Background
+Calculate $d*$ and match it with the closest $d$-spacing from the given lattice parameters. Print out those $(h,k,l)$ values
+
+
+def hkl_pairs(pa, p1, p2, b_c, det_d, p_s, wl, yaw, pitch, roll, polar_max):
+    '''Find the possible (h,k,l) for a pair of Bragg reflections (Q1,Q2)
+    Input
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    p1: detector pixel (x1,y1), a tuple of two integer
+    p2: detector pixel (x2,y2), a tuple of two integer
+    b_c: incident beam center at detector pixel (xc,yc), a tuple of float
+    det_d: sample distance to the detector, float in the unit of mm
+    p_s: detector pixel size, and each pixel is a square, float in the unit of mm
+    wl: X-ray wavelength, float in the unit of angstrom
+    yaw,pitch,roll: rotation angles of the detector, float in the unit of degree
+    polar_max: maximum scattering angle, i.e. maximum angle between the x-ray beam axis
+               and the powder ring, float in the unit of degree
+    Output
+    (ha,hb): tuple (ha,hb). ha,hb is a list of possible sorted (h,k,l)
+    '''
+    # Step 1: Calculate momentum transfers Q1 and Q2 for the two detector pixels
+    Q1 = q_cal_p(p1, b_c, det_d, p_s, wl, yaw, pitch, roll)
+    Q2 = q_cal_p(p2, b_c, det_d, p_s, wl, yaw, pitch, roll)
+    
+    # Step 2: Compute d* values (magnitude of Q vectors)
+    d1 = np.linalg.norm(Q1)
+    d2 = np.linalg.norm(Q2)
+    
+    # Step 3: Generate all possible (h,k,l) and their corresponding d* values from lattice parameters
+    ringhkls = ringdstar(pa, polar_max, wl)
+    
+    # Handle edge case where no valid (h,k,l) exist within polar_max
+    if not ringhkls:
+        return ([], [])
+    
+    # Step 4: Extract computed d* values from the ringhkls dictionary
+    dstar_keys = np.array(list(ringhkls.keys()))
+    
+    # Step 5: Find closest computed d* to measured d1 and get corresponding (h,k,l) list
+    diff1 = np.abs(dstar_keys - d1)
+    closest_idx1 = np.argmin(diff1)
+    closest_d1 = dstar_keys[closest_idx1]
+    ha = ringhkls[closest_d1]
+    
+    # Step 6: Find closest computed d* to measured d2 and get corresponding (h,k,l) list
+    diff2 = np.abs(dstar_keys - d2)
+    closest_idx2 = np.argmin(diff2)
+    closest_d2 = dstar_keys[closest_idx2]
+    hb = ringhkls[closest_d2]
+    
+    return (ha, hb)
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Calculate all possible $\mathbf{U}$ matrices for a pair of Bragg reflections $(Q_1,Q_2)$, corresponding to the peaks on the detector $(x_1,y_1)$ at frame $z_1$ and $(x_2,y_2)$ at frame $z_2$. Then select the best $\mathbf{U}$ matrix which can also index $Q_3$ with integers, where its peak on the detector $(x_3,y_3)$ at frame $z_3$
+Background
+Determine all possible $(h,k,l)$ sets $H_1$ and $H_2$ corresponding to both $Q_1$ and $Q_2$, respectively
+2. For each $h_1 \in H_1$ and $h_2 \in H_2$, calculate the angle between $h_1$ and $h_2$ in the Cartesian coordiante system. Iterate through all elements inside the sets and select those whose angles are close to the angle between $Q_1$ and $Q_2$
+3. Calculate the $\mathbf{U}$ matrix and utilize the $\mathbf{UB}$ matrices to index $Q_3$. Choose the best $\mathbf{U}$ matrix, where the indices of $Q_3$ have the shortest distance from the nearby Bragg peak
+
+def Umat_p(pa, p1, p2, p3, b_c, det_d, p_s, wl, yaw, pitch, roll, z1, z2, z3, z_s, chi, phi, polar_max):
+    '''Compute the U matrix which can best index $Q_3$ Bragg peak
+    Input
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    p1: detector pixel (x1,y1), a tuple of two integer
+    p2: detector pixel (x2,y2), a tuple of two integer
+    p3: detector pixel (x3,y3), a tuple of two integer
+    z1,z2,z3: frame number, integer
+    b_c: incident beam center at detector pixel (xc,yc), a tuple of float
+    det_d: sample distance to the detector, float in the unit of mm
+    p_s: detector pixel size, and each pixel is a square, float in the unit of mm
+    wl: X-ray wavelength, float in the unit of angstrom
+    yaw,pitch,roll: rotation angles of the detector, float in the unit of degree
+    z_s: step size in the \phi rotation, float in the unit of degree
+    chi,phi: diffractometer angles, float in the unit of degree
+    polar_max: maximum scattering angle, i.e. maximum angle between the x-ray beam axis
+               and the powder ring, float in the unit of degree
+    Output
+    (best_U,best_H1,best_H2,best_H)): tuple (best_U,best_H1,best_H2,best_H).
+                                      best_U: best U matrix, 3x3 orthogonal matrix, float;
+                                      best_H1,best_H2: tuple (h,k,l) for which each element is an integer,
+                                                       primary and secondary reflection for orientation
+                                      best_H: indices of Q3 using best U matrix, 3x1 orthogonal matrix, float
+    '''
+
+    return (best_U,best_H1,best_H2,best_H)
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

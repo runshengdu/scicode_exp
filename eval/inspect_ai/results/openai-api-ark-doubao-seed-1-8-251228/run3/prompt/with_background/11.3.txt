@@ -1,0 +1,127 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Given $j$ and $d$, write a function that returns a standard basis vector $|j\rangle$ in $d$-dimensional space. If $d$ is given as an int and $j$ is given as a list $[j_1,j_2\cdots,j_n]$, then return the tensor product $|j_1\rangle|j_2\rangle\cdots|j_n\rangle$ of $d$-dimensional basis vectors. If $d$ is also given as a list $[d_1,d_2,\cdots,d_n]$, return $|j_1\rangle|j_2\rangle\cdots|j_n\rangle$ as tensor product of $d_1$, $d_2$, ..., and $d_n$ dimensional basis vectors.
+Background
+A standard basis vector $|j\rangle$ in $d$ dimensional space is
+\begin{pmatrix} 0 \\ 0 \\ \vdots \\ 1 \\ \vdots \\ 0 \end{pmatrix}
+with a 1 on the $j$-th position and 0's everywhere else. Tensor products of two vectors are given by the Kronecker product
+\begin{align}
+|a\rangle|b\rangle = \begin{pmatrix} a_1 \\ a_2 \\ \vdots \\ a_n \end{pmatrix} \otimes \begin{pmatrix} b_1 \\ b_2 \\ \vdots \\ b_n \end{pmatrix} = \begin{pmatrix} a_1b_1 \\ a_1b_2 \\ \vdots \\ a_1b_n \\ a_2b_1 \\ a_2b_2 \\ \vdots \\ a_2b_n \\ a_nb_1 \\ a_nb_2 \vdots \\ a_nb_n \end{pmatrix}
+\end{align}
+
+
+
+def ket(j, dim):
+    '''Input:
+    j: int or list, the index(es) of the basis vector(s)
+    dim: int or list, dimension(s) of the ket space(s)
+    Output:
+    out: numpy array of float, the matrix representation of the ket tensor product
+    '''
+    # Validate input types and values
+    def validate_single(j_i, d_i):
+        if not isinstance(j_i, int) or j_i < 0 or j_i >= d_i:
+            raise ValueError(f"Index {j_i} is invalid for dimension {d_i}")
+        vec = np.zeros(d_i, dtype=float)
+        vec[j_i] = 1.0
+        return vec
+
+    if isinstance(dim, int):
+        if isinstance(j, int):
+            return validate_single(j, dim)
+        elif isinstance(j, list):
+            # Compute tensor product of d-dimensional basis vectors
+            vectors = [validate_single(ji, dim) for ji in j]
+            result = vectors[0]
+            for vec in vectors[1:]:
+                result = np.kron(result, vec)
+            return result
+        else:
+            raise TypeError("j must be int or list when dim is int")
+    elif isinstance(dim, list):
+        if not isinstance(j, list):
+            raise TypeError("j must be list when dim is list")
+        if len(j) != len(dim):
+            raise ValueError("Length of j must match length of dim")
+        # Compute tensor product of mixed-dimensional basis vectors
+        vectors = [validate_single(ji, di) for ji, di in zip(j, dim)]
+        result = vectors[0]
+        for vec in vectors[1:]:
+            result = np.kron(result, vec)
+        return result
+    else:
+        raise TypeError("dim must be int or list of positive integers")
+
+
+------
+
+Using the ket function, write a function that generates a bipartite maximally entangled state where both parties are encoded by $m$-rail encoding.
+Background
+The $m$-rail encoding produces the state
+$$
+|\psi_m\rangle = \frac{1}{\sqrt{m}}(\underbrace{|00\cdots01\rangle}_{m\text{ qubits}}\underbrace{|00\cdots01\rangle}_{m\text{ qubits}} + \underbrace{|00\cdots10\rangle}_{m\text{ qubits}}\underbrace{|00\cdots10\rangle}_{m\text{ qubits}} + \cdots + \underbrace{|10\cdots00\rangle}_{m\text{ qubits}}\underbrace{|10\cdots00\rangle}_{m\text{ qubits}}).
+$$
+
+
+def multi_rail_encoding_state(rails):
+    '''Returns the density matrix of the multi-rail encoding state
+    Input:
+    rails: int, number of rails
+    Output:
+    state: 2**(2*rails) x 2**(2*rails) dimensional array of numpy.float64 type
+    '''
+    m = rails
+    total_dim = 2 ** (2 * m)
+    sum_ket = np.zeros(total_dim, dtype=np.float64)
+    
+    for i in range(m):
+        # Create the j list for the m-qubit state with 1 at position i
+        j_list = [0] * m
+        j_list[i] = 1
+        # Get the ket vector for the m-qubit state
+        e_ket = ket(j_list, 2)
+        # Compute the tensor product of the state with itself
+        term = np.kron(e_ket, e_ket)
+        # Add to the cumulative sum
+        sum_ket += term
+    
+    # Normalize the state vector
+    psi_ket = sum_ket / np.sqrt(m)
+    # Compute the density matrix via outer product
+    rho = np.outer(psi_ket, psi_ket)
+    
+    return rho
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a function that returns the tensor product of an arbitrary number of matrices/vectors.
+
+
+def tensor():
+    '''Takes the tensor product of an arbitrary number of matrices/vectors.
+    Input:
+    args: any number of nd arrays of floats, corresponding to input matrices
+    Output:
+    M: the tensor product (kronecker product) of input matrices, 2d array of floats
+    '''
+
+    return M
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+import itertools
+import scipy.linalg
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

@@ -1,0 +1,36 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+From the definition, there are R factorial possible depletion orders. Due to the given preference lists, some of them are logically impossible (For example, if all the preference lists are [1, 2, 3, 4], resource 4 will not be the first to be depleted), so you need to filter them out. Write a function allowed_orders to do this task, where the input is pref_list, and the output is an list of n_allowed by R, where n_allowed is the number of allowed depletion orders.
+
+
+def allowed_orders(pref):
+    '''Check allowed depletion orders for a set of species with given preference orders
+    Input:
+    pref: species' preference order, 2d numpy array with dimensions [N, R] and int elements between 1 and R
+    Output:
+    allowed_orders_list: n_allowed by R, list of tuples with int elements betweem 1 and R. 
+    '''
+
+    return allowed_orders_list
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import itertools
+import numpy as np
+from math import *
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

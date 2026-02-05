@@ -1,0 +1,233 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Assumming periodic boundary conditrion, write a python function to simulate the Swift-Hohenberg in 2D space of N by N, using the pseudo-spectral method. The equation is given by $$
+\frac{\partial u}{\partial t} = \epsilon u - (1 + q_0^{-2}\nabla^2)^2 u - u^3
+$$ where $\epsilon$ serves as a control parameter of the system and $q_0$ is a critical mode. Given initial state $u_0$ at $t=0$, with a time step $dt$, solve the final state $u$ at time $T$. The order parameter $u$ remains real.
+Background
+Notice that the Swift-Hohenberg equation contains both gradient term and nonlinear term; hence, we adopt a split-step algorithm known as pseudo-spectral method. We rewrite the equation as
+$$
+\frac{\partial u}{\partial t} = [\epsilon u - u - u^3]-[2q_0^{-2}\nabla^2 + q_0^{-4}\nabla^4]u
+$$
+For one time step update, the input is the current state $u_N$, and the output is the order parameter at the subsequent step $u_{N+1}$:
+First, we update the term $\epsilon u - u - u^3$ in the position space to obtain an intermediate state $u_1$;
+2. Next, we tranform the tranport term $-[2q_0^{-2}\nabla^2 + q_0^{-4}\nabla^4]u$ to k-space, and update it in k-space based on $u_1$ using Fast Fourier Transform (FFT) and then invert it back to real space using the Inverse Fast Fourier Transform (IFFT) to obtain $u_{N+1}$.
+
+
+def solve_SH(u, dt, T, N, epsilon, q0):
+    '''Run a 2D simulation of Swift-Hohenberg equation
+    Input
+    u: initial condition of the order parameter, 2D array of floats
+    dt: time step size, float
+    T: total time of the ecolution, float
+    N: system size where the 2D system is of dimension N*N, int
+    epsilon: control parameter, float
+    q0: critical mode, float
+    Output
+    u: final state of the system at the end time T.
+    '''
+    current_u = u.copy()
+    current_time = 0.0
+    
+    # Precompute k-space grids and squared wave numbers
+    kx = 2 * np.pi * np.fft.fftfreq(N)
+    ky = 2 * np.pi * np.fft.fftfreq(N)
+    kx_grid, ky_grid = np.meshgrid(kx, ky, indexing='ij')
+    k_squared = kx_grid ** 2 + ky_grid ** 2
+    
+    while current_time < T:
+        # Adjust time step for final iteration if needed
+        step_dt = min(dt, T - current_time)
+        
+        # Step 1: Update nonlinear and local linear term in real space
+        reaction_term = (epsilon - 1) * current_u - current_u ** 3
+        u1 = current_u + step_dt * reaction_term
+        
+        # Step 2: Update linear derivative terms in k-space
+        # Transform intermediate state to k-space
+        u1_hat = np.fft.fft2(u1)
+        
+        # Compute exponential factor for k-space evolution
+        linear_operator_k = 2 * k_squared / (q0 ** 2) - (k_squared ** 2) / (q0 ** 4)
+        exp_factor = np.exp(step_dt * linear_operator_k)
+        
+        # Evolve in k-space and transform back to real space
+        u_next_hat = u1_hat * exp_factor
+        current_u = np.fft.ifft2(u_next_hat).real
+        
+        # Update elapsed time
+        current_time += step_dt
+    
+    return current_u
+
+
+------
+
+Calculate the structure factor $Sk$ of a given order parameter field $u(x,y)$ and corresponding coordinates in k-space. Both $k_x$ and $k_y$ axes are symmetric around zero mode.
+Background
+At time $t$, Structure factor of the order parameter $u({\bf x}, t)$ defined as
+$$
+S({\bf k}, t) = | U({\bf k}, t)|^2
+$$
+where $U({\bf k}, t)$ denotes the spatial Fourier transform of $u({\bf x}, t)$ at the mode ${\bf k}$.
+
+
+def structure_factor(u):
+    '''Calculate the structure factor of a 2D real spatial distribution and the Fourier coordinates, shifted to center around k = 0
+    Input
+    u: order parameter in real space, 2D N*N array of floats
+    Output
+    Kx: coordinates in k space conjugate to x in real space, 2D N*N array of floats
+    Ky: coordinates in k space conjugate to y in real space, 2D N*N array of floats
+    Sk: 2D structure factor, 2D array of floats
+    '''
+    N = u.shape[0]
+    # Compute k-space wave numbers
+    kx = 2 * np.pi * np.fft.fftfreq(N)
+    ky = 2 * np.pi * np.fft.fftfreq(N)
+    # Create 2D k-space grids
+    kx_grid, ky_grid = np.meshgrid(kx, ky, indexing='ij')
+    # Shift grids to center k=0
+    Kx = np.fft.fftshift(kx_grid)
+    Ky = np.fft.fftshift(ky_grid)
+    # Compute Fourier transform of u
+    U = np.fft.fft2(u)
+    # Calculate structure factor and shift to center
+    Sk = np.fft.fftshift(np.abs(U) ** 2)
+    
+    return Kx, Ky, Sk
+
+
+------
+
+To detect the formation of a stripe phase, analyze if there exists a peak mode $|k|$ in the structure factor $Sk$. If a peak exists, determine if it is located in the proximity of the critical mode $q_0$ within some reasonable tolerance threshold. If such a peak is found, assert that pattern formation occurs and return the peak location. When binning is used, use the center value of the bin to ensure accurate results.
+Background
+Note the system has rotational symmetry. Given a 2D structure factor $Sk$, we first need radially average $Sk$ and find the corresponding radial coordinate $kr$. Then, analyze the peak mode in the radial distribution.
+
+Due to wavenumber selection, the actual mode of the stripes may not be exactly at $q_0$, but could have a small deviation depending on the dynamical process.
+
+
+def analyze_structure_factor(Sk, Kx, Ky, q0, min_height):
+    '''Analyze the structure factor to identify peak near q0
+    Input:
+    Sk: 2D structure factor, 2D array of floats
+    Kx: coordinates in k space conjugate to x in real space, 2D N*N array of floats
+    Ky: coordinates in k space conjugate to y in real space, 2D N*N array of floats
+    q0: critical mode, float
+    min_height: threshold height of the peak in the structure factor to be considered, float
+    Output:
+    peak_found_near_q0: if a peak is found in the structure factor near q0 (meets combined proximity, narrowness, and height criteria), boolean
+    peak_near_q0_location: location of the peak near q0 in terms of radial k, float; set to 0 if no peak is found near q0
+    '''
+    # Compute radial wave number grid
+    kr_grid = np.sqrt(Kx ** 2 + Ky ** 2)
+    kr_flat = kr_grid.ravel()
+    sk_flat = Sk.ravel()
+    
+    # Get system size and fundamental wavevector spacing
+    N = Kx.shape[0]
+    delta_k = 2 * np.pi / N
+    
+    # Determine bin edges for radial averaging
+    max_kr = np.max(kr_flat)
+    bin_edges = np.arange(-delta_k / 2, max_kr + delta_k, delta_k)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+    
+    # Compute counts and sums for each radial bin
+    counts, _ = np.histogram(kr_flat, bins=bin_edges)
+    sk_sums, _ = np.histogram(kr_flat, bins=bin_edges, weights=sk_flat)
+    
+    # Calculate radially averaged structure factor (handle division by zero)
+    sk_radial = np.where(counts > 0, sk_sums / counts, np.nan)
+    
+    # Interpolate missing values to create uniformly spaced radial profile
+    valid_mask = ~np.isnan(sk_radial)
+    if np.any(valid_mask):
+        sk_radial_interp = np.interp(bin_centers, bin_centers[valid_mask], sk_radial[valid_mask])
+        # Set values beyond the maximum valid kr to 0
+        max_valid_kr = bin_centers[valid_mask].max()
+        sk_radial_interp[bin_centers > max_valid_kr] = 0.0
+    else:
+        # This case should not occur as k=0 mode always has count 1
+        sk_radial_interp = np.zeros_like(bin_centers)
+    
+    # Exclude k=0 bin from peak detection (stripe phase peaks are at non-zero k)
+    non_zero_mask = bin_centers > 0
+    sk_radial_non_zero = sk_radial_interp[non_zero_mask]
+    bin_centers_non_zero = bin_centers[non_zero_mask]
+    
+    if len(sk_radial_non_zero) == 0:
+        return False, 0.0
+    
+    # Detect peaks meeting the minimum height criterion in non-zero k region
+    peaks, peak_properties = find_peaks(sk_radial_non_zero, height=min_height)
+    
+    if len(peaks) == 0:
+        return False, 0.0
+    
+    # Extract peak properties
+    peak_krs = bin_centers_non_zero[peaks]
+    peak_diffs = np.abs(peak_krs - q0)
+    
+    # Define criteria thresholds
+    proximity_tolerance = max(0.1 * q0, delta_k)
+    narrowness_threshold = max(0.2 * q0, 2 * delta_k)
+    
+    # Calculate peak widths at half height (convert from indices to kr units)
+    widths, _, _, _ = peak_widths(sk_radial_non_zero, peaks, rel_height=0.5)
+    peak_widths_kr = widths * delta_k
+    
+    # Filter peaks that meet both proximity and narrowness criteria
+    valid_peaks_mask = (peak_diffs < proximity_tolerance) & (peak_widths_kr < narrowness_threshold)
+    valid_peak_krs = peak_krs[valid_peaks_mask]
+    
+    if len(valid_peak_krs) == 0:
+        return False, 0.0
+    else:
+        # Select the peak closest to q0
+        closest_idx = np.argmin(peak_diffs[valid_peaks_mask])
+        closest_peak_kr = valid_peak_krs[closest_idx]
+        return True, closest_peak_kr
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+In a two-dimensional system sized $N \times N$, we simulate the Swift-Hohenberg equation with a critical mode $q_0$ and a control parameter $\epsilon$, using the pseudo-spectral method. The simulation starts from an initial state $u_0$ at time $t = 0$ and stop at a final time $T$, using a time step $dt$. To analyze the formation of a stripe pattern, we compute the structure factor of the system's final state, and examine whether a significant peak appears near $q_0$; if so, return the stripe mode.
+
+
+def SH_pattern_formation(u0, dt, T, N, epsilon, q0, min_height):
+    '''This function simulates the time evolution of the Swift-Hohenberg equation using the pseudo-spectral method,
+    computes the structure factor of the final state, and analyze the structure factor to identify pattern formation.
+    Input
+    u: initial condition of the order parameter, 2D array of floats
+    dt: time step size, float
+    T: total time of the evolution, float
+    N: system size where the 2D system is of dimension N*N, int
+    epsilon: control parameter, float
+    q0: critical mode, float
+    min_height: threshold height of the peak in the structure factor to be considered, float; set to 0 if no stripe is formed
+    Output
+    u: spatial-temporal distribution at time T, 2D array of float
+    Sk: structure factor of the final states, 2D array of float
+    if_form_stripes: if the system form stripe pattern, boolean
+    stripe_mode: the wavenumber of the strips, float
+    '''
+
+    return u, Sk, if_form_stripes, stripe_mode
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+from numpy.fft import fft2, ifft2, fftshift, rfft2, irfft2, fftfreq, rfftfreq
+from scipy.signal import find_peaks, peak_widths
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

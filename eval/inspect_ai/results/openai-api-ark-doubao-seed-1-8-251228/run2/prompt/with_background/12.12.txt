@@ -1,0 +1,716 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+First consider the Schrodinger equation of the form: $(-\frac{\hbar^2}{2m}\nabla^2-\frac{Z e^2}{4\pi\varepsilon_0 r})\psi(\vec{r})=E \psi(\vec{r})$. Write a function to calculate $f(r)$ if we rewrite this Shroedinger equation in the form $u''(r) = f(r)u(r)$. The radii $r\_grid$, energy $energy$ and angular momentum quantum number $l$ will be given as input. Use $Z=1$ in this step.
+Background
+The Schroedinger equation without the Hartree term is:
+
+\begin{eqnarray}
+(-\frac{\hbar^2}{2m}\nabla^2-\frac{Z e^2}{4\pi\varepsilon_0 r})\psi(\vec{r})=E \psi(\vec{r})
+\end{eqnarray}
+
+using ansatz:
+
+$\psi(\vec{r}) = Y_{lm}(\hat{r})\; u(r)/r$
+
+and introducing dimensionless variables:
+
+\begin{eqnarray}
+x = \frac{r}{r_B}\\
+\varepsilon = \frac{E}{E_0}
+\end{eqnarray}
+where
+\begin{eqnarray}
+&& r_B = \frac{4\pi\varepsilon_0 \hbar^2}{m e^2} \approx 0.529 A\\
+&& E_0 = \frac{\hbar^2}{2 m r_B^2} == Ry \approx 13.6 eV
+\end{eqnarray}
+
+we get the differential equation
+
+\begin{eqnarray}
+u''(x)-
+\left(\frac{l(l+1)}{x^2}-\frac{2Z}{x}-\varepsilon\right)u(x)=0
+\end{eqnarray}
+
+
+
+def f_Schrod(energy, l, r_grid):
+    '''Input 
+    energy: a float
+    l: angular momentum quantum number; an int
+    r_grid: the radial grid; a 1D array of float
+    Output
+    f_r: a 1D array of float 
+    '''
+    # Constants from background
+    r_B = 0.529  # Bohr radius in Å
+    E0 = 13.6    # Rydberg energy in eV
+    Z = 1        # Atomic number as specified
+    
+    # Calculate dimensionless variables
+    x = r_grid / r_B
+    eps = energy / E0
+    
+    # Compute f(x) in dimensionless form
+    f_x = l * (l + 1) / (x ** 2) - 2 * Z / x - eps
+    
+    # Convert to f(r) for the original variable r
+    f_r = f_x / (r_B ** 2)
+    
+    return f_r
+
+
+------
+
+Write a function to solve for $u(r)$ in the differential equation of the form $u''(r) = f(r)u(r)$ with the Numerov method. $f(r)$, $u(0)$, $u'(0)$ and the step size will be given as input. Ignore the Hartree term in this step.
+Background
+
+We can use the Numerov algorithm to solve the second-order linear differential equation of the form:
+
+$$
+x''(t) = f(t)x(t) + u(t)\tag{1}
+$$
+
+Expanding $x(t)$ in a Taylor series and considering the time-reversal symmetry of the equation leads to the cancellation of all odd-order terms:
+
+$$
+\begin{align}
+x(h) &= x(0) + h x'(0) + \frac{1}{2}h^2 x''(0) + \frac{1}{3!}h^3 x^{(3)}(0) + \frac{1}{4!}h^4 x^{(4)}(0) + \frac{1}{5!}h^5 x^{(5)}(0) + \dots \tag{2}\\
+x(-h) &= x(0) - h x'(0) + \frac{1}{2}h^2 x''(0) - \frac{1}{3!}h^3 x^{(3)}(0) + \frac{1}{4!}h^4 x^{(4)}(0) - \frac{1}{5!}h^5 x^{(5)}(0) + \dots \tag{3}
+\end{align}
+$$
+
+Summing the above two equations results in:
+
+$$
+x(h) + x(-h) = 2x(0) + h^2 (f(0)x(0) + u(0)) + \frac{2}{4!}h^4 x^{(4)}(0) + O(h^6) \tag{4}
+$$
+
+For an algorithm of order $O(h^4)$, ignoring the $x^{(4)}$ term simplifies the recursion relation to:
+
+$$
+x_{i+1} = 2 x_i - x_{i-1} + h^2 (f_i x_i + u_i) + O(h^4) \tag{5}
+$$
+
+where
+$$
+\begin{align}
+x_{i-1} &= x(-h) \\
+x_i &= x(0) \\
+x_{i+1} &= x(h)
+\end{align}
+$$
+
+From equation (1) we know that its fourth derivative is:
+
+$$
+x^{(4)} = \frac{d^2}{dt^2}(f(t)x(t) + u(t)) \tag{6}
+$$
+
+Using the discrete approximation for the second derivative:
+
+$$
+g''(t) = \frac{g(t+h) - 2g(t) + g(t-h)}{h^2} + O(h^2) \tag{7}
+$$
+
+we can approximate $x^{(4)}$ by:
+
+$$
+x^{(4)} = \frac{f_{i+1}x_{i+1} + u_{i+1} - 2f_i x_i - 2u_i + f_{i-1}x_{i-1} + u_{i-1}}{h^2} + O(h^2) \tag{8}
+$$
+
+Inserting this fourth derivative into equation (5) gives:
+
+$$
+x_{i+1} - 2 x_i + x_{i-1} = h^2(f_i x_i + u_i) + \frac{h^2}{12}(f_{i+1}x_{i+1} + u_{i+1} - 2f_i x_i - 2u_i + f_{i-1}x_{i-1} + u_{i-1}) + O(h^6) \tag{9}
+$$
+
+If we apply the following change of variables:
+
+$$
+w_i = x_i\left(1 - \frac{h^2}{12} f_i\right) - \frac{h^2}{12}u_i
+$$
+
+the recursion equation becomes:
+
+$$
+w_{i+1} = 2 w_i - w_{i-1} + h^2 (f_i x_i + u_i) + O(h^6) \tag{10}
+$$
+where $x_i$ is recalculated at each step using:
+
+$$
+x_i = \frac{w_i + \frac{h^2}{12}u_i}{1 - \frac{h^2}{12}f_i}
+$$
+
+
+def Numerov(f_in, u_at_0, up_at_0, step):
+    '''Given precomputed function f(r), solve the differential equation u''(r) = f(r)*u(r)
+    using the Numerov method.
+    Inputs:
+    - f_in: input function f(r); a 1D array of float representing the function values at discretized points.
+    - u_at_0: the value of u at r = 0; a float.
+    - up_at_0: the derivative of u at r = 0; a float.
+    - step: step size; a float.
+    Output:
+    - u: the integration results at each point in the radial grid; a 1D array of float.
+    '''
+    f_in = np.asarray(f_in)
+    n = len(f_in)
+    u = np.zeros(n, dtype=np.float64)
+    u[0] = u_at_0
+    
+    if n == 1:
+        return u
+    
+    h = step
+    # Compute u[1] using Taylor expansion up to O(h^3)
+    u1 = u_at_0 + h * up_at_0 + 0.5 * h**2 * f_in[0] * u_at_0
+    u[1] = u1
+    
+    if n == 2:
+        return u
+    
+    # Iterate using direct Numerov recursion for remaining points
+    for i in range(1, n - 1):
+        numerator = 24 * u[i] - 12 * u[i-1] + (h**2) * (10 * f_in[i] * u[i] + f_in[i-1] * u[i-1])
+        denominator = 12 - (h**2) * f_in[i+1]
+        u[i+1] = numerator / denominator
+    
+    return u
+
+
+------
+
+Write a function to solve the Schroedinger equation using the two functions defined above (f_Schrod and Numerov). Normalize the result using Simpson's rule. The u_at_0 is 0, up_at_0 is -1e-7. Do the integration from the largest radius. The numerov step size should be r_grid[0]-r_grid[1].
+
+
+
+def compute_Schrod(energy, r_grid, l):
+    '''Input 
+    energy: a float
+    l: angular momentum quantum number; an int
+    r_grid: the radial grid; a 1D array of float
+    Output
+    ur_norm: normalized wavefunction u(x) at x = r
+    '''
+    # Reverse the radial grid to integrate from the largest radius inward
+    r_reversed = r_grid[::-1]
+    # Compute the f(r) values for the reversed grid
+    f_reversed = f_Schrod(energy, l, r_reversed)
+    # Calculate the step size as specified (r_grid[0] - r_grid[1])
+    step = r_grid[0] - r_grid[1]
+    # Solve the differential equation using the Numerov method
+    u_reversed = Numerov(f_reversed, u_at_0=0.0, up_at_0=-1e-7, step=step)
+    # Reverse the solution to match the original grid order
+    u_original = u_reversed[::-1]
+    # Compute the normalization integral using Simpson's rule
+    integral = integrate.simpson(u_original ** 2, x=r_grid)
+    # Normalize the wavefunction
+    ur_norm = u_original / np.sqrt(integral)
+    
+    return ur_norm
+
+
+------
+
+As part of the shooting algorithm to be used later, write a function that linearly extrapolates the value of the wavefunction at $r=0$ using the wavefunctions at the first and second grid points in the radial grid calculated from the compute_Schrod function. Before the extrapolation, divide the wavefunction by $r^{l}$, where r is the corresponding radius of a wavefunction value and $l$ is the angular momentum quantum number.
+Background
+**Shooting algorithm:**
+
+The boundary condistions are given at two points $a$ and $b$, i.e., $u(a)=u(b)=0$. 
+
+* **Choose $u(a)=0$ and $u'(a)=c$, with $c$ some constant.**
+* **Solve for $u(x)$ to the other end, and evaluate $u(b)$.**
+
+
+def shoot(energy, r_grid, l):
+    '''Input 
+    energy: a float
+    r_grid: the radial grid; a 1D array of float
+    l: angular momentum quantum number; an int
+    Output 
+    f_at_0: float
+    '''
+    # Get normalized radial wavefunction u(r)
+    ur_norm = compute_Schrod(energy, r_grid, l)
+    
+    # Extract first two grid points and corresponding u values
+    r0, r1 = r_grid[0], r_grid[1]
+    u0, u1 = ur_norm[0], ur_norm[1]
+    
+    # Divide by r^l for each point
+    v0 = u0 / (r0 ** l)
+    v1 = u1 / (r1 ** l)
+    
+    # Linear extrapolation to r=0 (y-intercept of the line through (r0, v0) and (r1, v1))
+    f_at_0 = (v0 * r1 - v1 * r0) / (r1 - r0)
+    
+    return f_at_0
+
+
+------
+
+Write a function to search for bound states with a given angular momentum quantum number $l$ using the shoot function defined previously and a root-finding routine such as the brentq routine in scipy. Ignore the Hartree term in this step. The maximum number of bound states to be searched for should be set to 10.
+Background
+
+**Shooting algorithm:** 
+
+The boundary condistions are given at two points $a$ and $b$, i.e., $u(a)=u(b)=0$. 
+
+* Choose $u(a)=0$ and $u'(a)=c$, with $c$ some constant.
+* Solve for $u(x)$ to the other end, and evaluate $u(b)$.
+
+* **Using root finding routine find energy $\varepsilon$ for which u(b)=0. This is the bound state.**
+* **Continue with increasing energy $\varepsilon$ until sufficient number of bound states is found**
+
+
+def find_bound_states(r_grid, l, energy_grid):
+    '''Input
+    r_grid: a 1D array of float
+    l: angular momentum quantum number; int
+    energy_grid: energy grid used for search; a 1D array of float
+    Output
+    bound_states: a list, each element is a tuple containing the angular momentum quantum number (int) and energy (float) of all bound states found
+    '''
+    # Compute shoot function values for all energies in the grid
+    shoot_vals = np.array([shoot(energy, r_grid, l) for energy in energy_grid])
+    
+    bound_states = []
+    near_zero_threshold = 1e-10
+    
+    # First, check for exact near-zero values (bound states exactly on the grid)
+    exact_zero_indices = np.where(np.abs(shoot_vals) < near_zero_threshold)[0]
+    for idx in exact_zero_indices:
+        if len(bound_states) >= 10:
+            break
+        bound_energy = energy_grid[idx]
+        bound_states.append((l, bound_energy))
+    
+    # Find intervals where shoot function changes sign
+    sign_changes = np.where(np.diff(np.sign(shoot_vals)) != 0)[0]
+    
+    # Process each sign change interval to find roots
+    for idx in sign_changes:
+        if len(bound_states) >= 10:
+            break
+        
+        a = energy_grid[idx]
+        b = energy_grid[idx + 1]
+        f_a = shoot_vals[idx]
+        f_b = shoot_vals[idx + 1]
+        
+        # Skip if signs are the same (sanity check) or if we already added exact zero
+        if np.sign(f_a) == np.sign(f_b):
+            continue
+        if np.abs(f_a) < near_zero_threshold or np.abs(f_b) < near_zero_threshold:
+            continue
+        
+        # Use Brentq to find the bound state energy in the interval
+        try:
+            bound_energy = optimize.brentq(lambda e: shoot(e, r_grid, l), a, b)
+            bound_states.append((l, bound_energy))
+        except ValueError:
+            # Skip if root-finding fails (e.g., numerical issues)
+            continue
+    
+    # Remove duplicate energies (if any) by rounding to 10 decimal places
+    seen = set()
+    unique_bound_states = []
+    for state in bound_states:
+        rounded_energy = round(state[1], 10)
+        if rounded_energy not in seen:
+            seen.add(rounded_energy)
+            unique_bound_states.append(state)
+            if len(unique_bound_states) >= 10:
+                break
+    
+    return unique_bound_states
+
+
+------
+
+Given a list of all bound states found (up to a specified angular momentum quantum number $l$), sort the list by energy and angular momentum quantum number. State with lower energy will be in front. If two states have the same energy, the one with smaller angular momentum quantum number will be in front. Ensure that angular momentum quantum number only affects (by a factor of 1/10000.0) the order when energy values are very close or identical.
+
+
+
+def sort_states(bound_states):
+    '''Input
+    bound_states: a list of bound states found by the find_bound_states function, each element is a tuple containing the angular momentum quantum number (int) and energy (float)
+    Output
+    sorted_states: a list that contains the sorted bound_states tuples according to the following rules: State with lower energy will be in front. If two states have the same energy, the one with smaller angular momentum quantum number will be in front.
+    '''
+    # Sort by energy (ascending) first, then by angular momentum (ascending)
+    sorted_states = sorted(bound_states, key=lambda x: (x[1], x[0]))
+    return sorted_states
+
+
+------
+
+Write a function to calculate the radius-dependent charge density of the bound states. The bound states will be calculated from the find_bound_states function in prompt and be given as input. This function should sort the bound states input using the sort_states function in prompt . Then it should populate the available orbitals with the sorted states, taking into consideration the total number of available states and their degeneracy based on their angular momentum quantum numbers. Next, it should calculate the charge density of the states based on their wavefunctions calculated from the compute_Schrod function in prompt . Store the density and return it.
+Background
+When populating the orbitals, it is convenient to define a variable $fermi\_factor$. If there is enough states left to fill an orbital completely, $fermi\_factor = 1$. Otherwise, $fermi\_factor = (Z-N)/D$, where Z is the atomic number, N is the number of states already assigned to an orbital, and D is the degneracy of the orbital currently being filled. Multiply this variable with the computed charge density to get the correct contribution.
+
+
+def calculate_charge_density(bound_states, r_grid, Z):
+    '''Input
+    bound_states: bound states found using the find_bound_states function; a list of tuples
+    r_grid: the radial grid; a 1D array of float
+    Z: atomic number; int
+    Output
+    charge_density: the calculated charge density coming from the bound states; 1D array of float
+    '''
+    # Sort bound states by energy (ascending), then angular momentum (ascending)
+    sorted_states = sort_states(bound_states)
+    
+    # Initialize total charge density to zero
+    charge_density = np.zeros_like(r_grid, dtype=np.float64)
+    
+    # Track number of electrons assigned to orbitals
+    assigned_electrons = 0
+    
+    for state in sorted_states:
+        if assigned_electrons >= Z:
+            break
+        
+        l, energy = state
+        # Calculate orbital degeneracy: 2*(2l+1) (spin + magnetic quantum numbers)
+        degeneracy = 2 * (2 * l + 1)
+        remaining = Z - assigned_electrons
+        
+        # Determine Fermi factor and number of electrons to add to this orbital
+        if remaining >= degeneracy:
+            fermi_factor = 1.0
+            electrons_added = degeneracy
+        else:
+            fermi_factor = remaining / degeneracy
+            electrons_added = remaining
+        
+        # Get normalized radial wavefunction u(r)
+        ur_norm = compute_Schrod(energy, r_grid, l)
+        
+        # Compute (u(r)/r)^2, handling potential division by zero at r=0
+        ur_over_r = ur_norm / r_grid
+        nan_mask = np.isnan(ur_over_r)
+        if np.any(nan_mask):
+            # Interpolate to fill NaN values using valid nearby points
+            valid_r = r_grid[~nan_mask]
+            valid_ur_over_r = ur_over_r[~nan_mask]
+            ur_over_r[nan_mask] = np.interp(r_grid[nan_mask], valid_r, valid_ur_over_r)
+        
+        # Charge density for fully filled orbital (using e=1 in atomic charge units)
+        full_orbital_density = (-1) * (degeneracy / (4 * np.pi)) * (ur_over_r ** 2)
+        
+        # Calculate contribution from partially or fully filled orbital
+        contribution = fermi_factor * full_orbital_density
+        
+        # Add to total charge density
+        charge_density += contribution
+        
+        # Update count of assigned electrons
+        assigned_electrons += electrons_added
+    
+    return charge_density
+
+
+------
+
+Now we include the Hartree term in the Schrodinger equation. Write a function to solve for the Hartree potential according to the following Poisson equation $\nabla^2 V_{H}(\vec{r}) = -8\pi \rho(\vec{r})$ using the charge density calculated in prompt and a Numerov algorithm routine. Return the solution in the form of HartreeU $U(r)=V_{H}(r)r$.
+Background
+Hartree potential
+The expression for the Schrodinger equation including the Hartree term is:
+\begin{eqnarray}
+(-\frac{\hbar^2}{2m}\nabla^2-\frac{Z e^2}{4\pi\varepsilon_0 r} + V_H(r))\psi(\vec{r})=E \psi(\vec{r})
+\end{eqnarray}.
+
+The Hartree term represents the electrostatic interaction between an individual electron and the distribution of all electrons, including the electron itself. The mathematical expression for this term is:
+
+$$
+\frac{1}{2}\int d\vec{r} d\vec{r}' \psi^\dagger (\vec{r})\psi^\dagger (\vec{r}')
+v_c(\vec{r}-\vec{r}') \psi(\vec{r}')\psi(\vec{r}) \rightarrow
+\int d\vec{r} \psi^\dagger(\vec{r}) \psi(\vec{r}) \int d\vec{r}'
+\langle\psi^\dagger(\vec{r}') \psi(\vec{r}')\rangle v_c(\vec{r}-\vec{r}') \equiv
+\int d\vec{r} \psi^\dagger(\vec{r}) V_{H}(\vec{r}) \psi(\vec{r})
+$$
+
+with:
+$$
+V_H(\vec{r}) = 2 \int d\vec{r}' \frac{\rho(\vec{r}')}{|\vec{r}-\vec{r}'|}
+$$
+
+To solve for the Hartree potential, we simply need to solve a Poisson equation of the form:
+\begin{eqnarray}
+  \nabla^2 V_{H}(\vec{r}) = -8\pi \rho(\vec{r})
+\end{eqnarray}
+In Hartree approximation, we have
+\begin{equation}
+\frac{1}{r^2}\frac{d}{dr}(r^2 \frac{d V_H}{dr})= -8\pi\rho(r)  
+\end{equation}
+which simplifies to
+\begin{equation}
+  U^{''}(r) = -8\pi r \rho(r)
+\end{equation}
+where $U(r) = V_{H}(r) r$.
+
+This second order differential equation has the following boundary
+conditions $U(0)=0$ and $U(\infty)=2 Z$.
+
+The two point boundary problem does not require shooting because we
+know solution to the homogenous differential equation
+$U^{''}(r)=0$. The Hartree potential can be obtained from any
+particular solution by
+\begin{equation}
+  U(r) = U_p(r) + \alpha r
+\end{equation}
+where $\alpha = \lim_{r\rightarrow\infty}(2 Z-U_{p}(r))/r$.
+
+Solving for U(r) using the Numerov method
+Poisson equation does not have the first order derivative, hence it can also be more efficiently solved by the Numerov algorithm.
+
+We have Poisson equation, which has the form
+\begin{equation}
+x^{''}(t)= u(t)
+\end{equation}
+and the Numerov algorithm, as appropriate for the Poisson equation, is
+\begin{eqnarray}
+  x(h)+x(-h) = 2x(0)+h^2 u(0)+\frac{2}{4!}h^4 x^{(4)}(0)+O(h^6)
+\end{eqnarray}
+and the approximation for the forth order derivative is
+\begin{equation}
+  x^{(4)}\sim \frac{u_{i+1}-2 u_i+u_{i-1}}{h^2}
+\end{equation}
+
+Inserting the fourth order derivative into the above recursive equation (forth equation in his chapter), we
+get
+
+\begin{equation}
+  x_{i+1}-2 x_i+x_{i-1}=h^2 u_i +\frac{h^2}{12}(u_{i+1}-2 u_i+u_{i-1})
+\end{equation}
+
+If we switch to a new variable $w_i=x_i-\frac{h^2}{12}u_i$
+we are left with the following
+equation
+
+\begin{equation}
+  w_{i+1} -2 w_i + w_{i-1} = h^2 u_i+O(h^6)
+\end{equation}
+
+The variable $x$ needs to be recomputed at each step with
+$x_i=(w_i+\frac{h^2}{12}u_i)$.
+
+
+def calculate_HartreeU(charge_density, u_at_0, up_at_0, step, r_grid, Z):
+    '''Input
+    charge_density: the calculated charge density of the bound states; 1D array of float
+    u_at_0: the value of u at r = 0; float
+    up_at_0: the derivative of u at r = 0; float
+    step: step size; float.
+    r_grid: the radial grid; a 1D array of float
+    Z: atomic number; int
+    Output
+    x: the HartreeU term with U(r)=V_H(r)r; 1D array of float
+    '''
+    # Compute the right-hand side of the differential equation U''(r) = -8π r ρ(r)
+    u_rhs = -8 * np.pi * r_grid * charge_density
+    
+    n = len(r_grid)
+    if n == 0:
+        return np.array([])
+    
+    # Initialize arrays for particular solution U_p and w
+    U_p = np.zeros(n, dtype=np.float64)
+    w = np.zeros(n, dtype=np.float64)
+    
+    # Set initial conditions for U_p
+    U_p[0] = u_at_0
+    
+    # Compute w[0]
+    w[0] = U_p[0] - (step ** 2 / 12) * u_rhs[0]
+    
+    if n == 1:
+        # Handle single-point grid case
+        if r_grid[0] == 0:
+            return np.array([0.0])
+        alpha = (2 * Z - U_p[0]) / r_grid[0]
+        return U_p + alpha * r_grid
+    
+    # Compute U_p[1] using Taylor expansion up to O(h^3)
+    x_double_prime_0 = u_rhs[0]
+    U_p[1] = u_at_0 + step * up_at_0 + 0.5 * step ** 2 * x_double_prime_0
+    
+    # Compute w[1]
+    w[1] = U_p[1] - (step ** 2 / 12) * u_rhs[1]
+    
+    # Iterate using Numerov recursion to compute w for i >=2
+    for i in range(1, n - 1):
+        w[i + 1] = 2 * w[i] - w[i - 1] + step ** 2 * u_rhs[i]
+    
+    # Recompute U_p from w using the Numerov transformation (vectorized operation)
+    U_p = w + (step ** 2 / 12) * u_rhs
+    
+    # Calculate alpha to satisfy the boundary condition U(∞) = 2Z
+    r_max = r_grid[-1]
+    U_p_max = U_p[-1]
+    alpha = (2 * Z - U_p_max) / r_max
+    
+    # Construct the final solution U(r) = U_p(r) + alpha * r
+    U = U_p + alpha * r_grid
+    
+    return U
+
+
+------
+
+Write a function to express $u(r)$ if we rewrite the Schrodinger equation in the form $u''(r) = f(r)u(r)$ with the Hartree potential term included. The radii $r\_grid$, energy $energy$ and angular momentum quantum number $l$ will be given as input.
+Background
+The Schroedinger equation including the Hartree potential term is
+ \begin{equation}
+   u^{''}(r) = \left(\frac{l(l+1)}{r^2}-\frac{2 Z}{r} + V_{H}(r)-\varepsilon\right)u(r).
+ \end{equation}
+or
+  \begin{equation}
+   u^{''}(r) = \left(\frac{l(l+1)}{r^2}+\frac{U_H(r) - 2 Z}{r}-\varepsilon\right)u(r).
+ \end{equation}
+
+
+def f_Schrod_Hartree(energy, r_grid, l, Z, hartreeU):
+    '''Input 
+    energy: float
+    r_grid: the radial grid; a 1D array of float
+    l: angular momentum quantum number; int
+    Z: atomic number; int
+    hartreeU: the values of the Hartree term U(r) in the form of U(r)=V_H(r)r, where V_H(r) is the actual Hartree potential term in the Schrodinger equation; a 1d array of float
+    Output
+    f_r: a 1D array of float 
+    '''
+    # Constants from background
+    r_B = 0.529  # Bohr radius in Å
+    E0 = 13.6    # Rydberg energy in eV
+    
+    # Calculate dimensionless variables
+    x = r_grid / r_B
+    eps = energy / E0
+    
+    # Compute f(x) in dimensionless form using the second equation from background
+    f_x = l * (l + 1) / (x ** 2) + (hartreeU - 2 * Z) / x - eps
+    
+    # Convert to f(r) for the original variable r
+    f_r = f_x / (r_B ** 2)
+    
+    return f_r
+
+
+------
+
+Write a function to solve the Schroedinger equation defined in prompt by combining the two functions defined in prompts and (Numerov and f_Schrod_Hartree). Normalize the result using Simpson's rule.
+
+
+
+def compute_Schrod_Hartree(energy, r_grid, l, Z, hartreeU):
+    '''Input 
+    energy: float
+    r_grid: the radial grid; a 1D array of float
+    l: angular momentum quantum number; int
+    Z: atomic number; int
+    hartreeU: the values of the Hartree term U(r) in the form of U(r)=V_H(r)r, where V_H(r) is the actual Hartree potential term in the Schrodinger equation; a 1d array of float
+    Output
+    ur_norm: normalized wavefunction u(x) at x = r
+    '''
+    # Reverse the radial grid to integrate from the largest radius inward
+    r_reversed = r_grid[::-1]
+    # Reverse HartreeU to match the reversed radial grid
+    hartreeU_reversed = hartreeU[::-1]
+    
+    # Compute f(r) for the reversed grid using f_Schrod_Hartree
+    f_reversed = f_Schrod_Hartree(energy, r_reversed, l, Z, hartreeU_reversed)
+    
+    # Calculate step size as specified
+    step = r_grid[0] - r_grid[1]
+    
+    # Solve the differential equation using the Numerov method
+    u_reversed = Numerov(f_reversed, u_at_0=0.0, up_at_0=-1e-7, step=step)
+    
+    # Reverse the solution to match the original grid order
+    u_original = u_reversed[::-1]
+    
+    # Compute normalization integral using Simpson's rule
+    integral = integrate.simpson(u_original ** 2, x=r_grid)
+    
+    # Normalize the wavefunction
+    ur_norm = u_original / np.sqrt(integral)
+    
+    return ur_norm
+
+
+------
+
+Write a function to extrapolate the value of the wavefunction $u(r)$ at $r = 0$ using the compute_Schrod_Hartree function defined in the previous step and the polyfit function in Numpy up to 3rd order polynomial. Use the first four grid points in the wavefunction array. Before the extrapolation, divide the wavefunction by $r^{l}$, where r is the corresponding radius of a wavefunction value and $l$ is the angular momentum quantum number.
+
+
+
+def extrapolate_polyfit(energy, r_grid, l, Z, hartreeU):
+    '''Input 
+    energy: float
+    r_grid: the radial grid; a 1D array of float
+    l: angular momentum quantum number; int
+    Z: atomic number; int
+    hartreeU: the values of the Hartree term U(r) in the form of U(r)=V_H(r)r, where V_H(r) is the actual Hartree potential term in the Schrodinger equation; a 1d array of float
+    Output
+    u0: the extrapolated value of u(r) at r=0; float
+    '''
+    # Get normalized radial wavefunction u(r)
+    ur_norm = compute_Schrod_Hartree(energy, r_grid, l, Z, hartreeU)
+    
+    # Extract first four grid points and corresponding u values
+    r_four = r_grid[:4]
+    u_four = ur_norm[:4]
+    
+    # Compute v = u / r^l for each of the four points
+    v_four = u_four / (r_four ** l)
+    
+    # Fit a 3rd-order polynomial to (r_four, v_four)
+    coeffs = np.polyfit(r_four, v_four, 3)
+    poly = np.poly1d(coeffs)
+    
+    # Evaluate the polynomial at r=0 to get the extrapolated v(0)
+    v0 = poly(0.0)
+    
+    # Calculate u(0): for l>0, u(r) ~ r^{l+1} so u(0)=0; for l=0, u(0)=v0
+    u0 = v0 if l == 0 else 0.0
+    
+    return u0
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a function to search for bound states with a given angular momentum quantum number $l$ using the extrapolate_polyfit function defined in the previous step and a root-finding routine such as the brentq routine in scipy. The maximum number of bound states to be searched for should be set to 10.
+
+
+def find_bound_states_Hartree(r_grid, l, energy_grid, Z, hartreeU):
+    '''Input
+    r_grid: a 1D array of float
+    l: angular momentum quantum number; int
+    energy_grid: energy grid used for search; a 1D array of float
+    Z: atomic number; int
+    hartreeU: the values of the Hartree term U(r) in the form of U(r)=V_H(r)r, where V_H(r) is the actual Hartree potential term in the Schrodinger equation; a 1d array of float
+    Output
+    bound_states: a list, each element is a tuple containing the angular momentum quantum number (int) and energy (float) of all bound states found
+    '''
+
+    return bound_states
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+from scipy import integrate
+from scipy import optimize
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

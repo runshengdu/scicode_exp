@@ -1,0 +1,160 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Wrap to periodic boundaries
+Implementing a Python function named `wrap`. This function should apply periodic boundary conditions to the coordinates of a particle inside a cubic simulation box.
+Background:
+To implement PBC, the unit cell is surrounded by translated copies in all directions to approximate an infinitely large system. When one molecule diffuses across the boundary of the simulation box it reappears on the opposite side. So each molecule always interacts with its neighbours even though they may be on opposite sides of the simulation box
+
+
+def wrap(r, L):
+    '''Apply periodic boundary conditions to a vector of coordinates r for a cubic box of size L.
+    Parameters:
+    r : The (x, y, z) coordinates of a particle.
+    L (float): The length of each side of the cubic box.
+    Returns:
+    coord: numpy 1d array of floats, the wrapped coordinates such that they lie within the cubic box.
+    '''
+    r_np = np.asarray(r)
+    coord = np.mod(r_np, L)
+    return coord
+
+
+------
+
+Energy of a single particle
+
+ Implementing a Python function `E_i` to calculate the total Lennard-Jones potential energy of a particle due to its interactions with multiple other particles in a periodic cubic box. Apply minimum image convention. 'E_i' contains a  subfunction "E_ij", which computes the Lennard-Jones Potential between pair of atoms.
+Background
+The Lennard-Jones potential models soft repulsive and attractive (van der Waals) interactions. Hence, the Lennard-Jones potential describes electronically neutral atoms or molecules. The commonly used expression for the Lennard-Jones potential is:
+
+$V^{tr-sh}_{LJ}(r) =
+\begin{cases}
+V_{LJ}(r) , & \text{if } r < r_c\\
+0, & \text{if } r > r_c
+\end{cases}
+$
+
+$
+V_{LJ}(r) = 4\epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r} \right)^{6} \right].
+$
+
+where r is the distance between two interacting particles, epsilon is the depth of the potential well (usually referred to as 'dispersion energy'), and sigma is the distance at which the particle-particle potential energy V is zero (often referred to as 'size of the particle').
+
+The potential is truncated and shifted at a distance $ r_c $ to ensure the interaction energy becomes zero for $ r > r_c $, simplifying the force computations.
+
+
+def E_i(r, pos, sigma, epsilon, L, r_c):
+    '''Calculate the total Lennard-Jones potential energy of a particle with other particles in a periodic system.
+    Parameters:
+    r : array, the (x, y, z) coordinates of the target particle.
+    pos : An array of (x, y, z) coordinates for each of the other particles in the system.
+    sigma : float, the distance at which the potential minimum occurs
+    epsilon : float, the depth of the potential well
+    L : float, the length of the side of the cubic box
+    r_c : float, cut-off distance
+    Returns:
+    float, the total Lennard-Jones potential energy of the particle due to its interactions with other particles.
+    '''
+    def E_ij(r_ij):
+        '''Compute the Lennard-Jones Potential between a pair of atoms at distance r_ij.'''
+        if r_ij < r_c:
+            sigma_over_r = sigma / r_ij
+            return 4 * epsilon * (sigma_over_r ** 12 - sigma_over_r ** 6)
+        else:
+            return 0.0
+    
+    r_np = np.asarray(r)
+    pos_np = np.asarray(pos)
+    total_energy = 0.0
+    
+    for pos_j in pos_np:
+        # Compute relative position vector
+        dr = pos_j - r_np
+        # Apply minimum image convention to get shortest periodic distance
+        dr = np.mod(dr + L / 2, L) - L / 2
+        # Calculate Euclidean distance between particles
+        r_ij = np.linalg.norm(dr)
+        # Accumulate pairwise interaction energy
+        total_energy += E_ij(r_ij)
+    
+    return total_energy
+
+
+------
+
+Widom Test Particle Insertion Method
+
+Implementing a Python function named `Widom_insertion` to perform the Widom test particle insertion method for calculating the chemical potential of Lennard Jones system in the NVT ensemble
+Background
+The excess chemical potential can be expressed using the ensemble average of the potential energy difference due to insertion of (N+1)-th particle into the N-particle system:
+
+$$
+\mu_{ex} = -k_B T \ln \int d\mathbf{r}_{N+1}\langle \exp(-\beta \Delta U) \rangle_N
+$$
+
+
+def Widom_insertion(pos, sigma, epsilon, L, r_c, T):
+    '''Perform the Widom test particle insertion method to calculate the change in chemical potential.
+    Parameters:
+    pos : ndarray, Array of position vectors of all particles in the system.
+    sigma: float, The effective particle diameter 
+    epsilon: float, The depth of the potential well
+    L: float, The length of each side of the cubic simulation box
+    r_c: float, Cut-Off Distance
+    T: float, The temperature of the system
+    Returns:
+    float: Boltzmann factor for the test particle insertion, e^(-beta * energy of insertion).
+    '''
+    # Generate random position for the test particle within the cubic box [0, L)
+    test_r = np.random.uniform(0.0, L, size=3)
+    
+    # Calculate the total insertion energy using the E_i function
+    U_insert = E_i(test_r, pos, sigma, epsilon, L, r_c)
+    
+    # Define beta as 1/(k_B*T), assuming k_B=1 (common in reduced unit simulations)
+    beta = 1.0 / T
+    
+    # Compute the Boltzmann factor
+    Boltz = np.exp(-beta * U_insert)
+    
+    return Boltz
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+System Initialization Function
+
+Implementing a Python function named `init_system` to initialize a system of particles arranged in a cubic grid within a simulation box. The initialization depends on the given number of particles \(N\) and their density $\rho$.
+The function calculates the side length of the cube (L) based on the given density and number of particles.
+It arranges the particles in a regular grid within the cube, ensuring that all particles are properly positioned
+within the boundaries of the cube.
+
+
+def init_system(N, rho):
+    '''Initialize a system of particles arranged on a cubic grid within a cubic box.
+    Args:
+    N (int): The number of particles to be placed in the box.
+    rho (float): The density of particles within the box, defined as the number of particles per unit volume.
+    Returns:
+    tuple: A tuple containing:
+        - positions(np.ndarray): The array of particle positions in a 3D space.
+        - L(float): The length of the side of the cubic box in which the particles are placed.
+    '''
+
+    return positions, L
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

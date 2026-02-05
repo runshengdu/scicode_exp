@@ -1,0 +1,103 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Write a Python class to implement a Slater wave function. The class contains functions to evaluate the unnormalized wave function psi, (gradient psi) / psi, (laplacian psi) / psi, and kinetic energy. Each function takes `configs` of shape `(nconfig, nelectrons, ndimensions)` as an input where: conf is the number of configurations, nelec is the number of electrons (2 for helium), ndim is the number of spatial dimensions (usually 3). The Slater wave function is given by $\exp(-\alpha r_1) \exp(-\alpha r_2)$.
+Background
+
+Slater
+
+Define a simple wave function with exponential orbitals and no Jastrow factor.
+
+**Value**
+
+\begin{align}
+\psi(r_1, r_2) &= \exp(-\alpha r_1) \exp(-\alpha r_2).
+\end{align}
+
+**Gradient**
+
+\begin{align}
+\frac{\nabla \psi}{\psi} &= -\alpha \left[\frac{\mathbf{r}_1 }{r_1}, \frac{\mathbf{r}_2}{r_2} \right]
+\end{align}
+
+**Laplacian**
+
+\begin{align}
+\frac{\nabla^2 \psi}{\psi} &= \left[-\frac{2 \alpha}{r_1} + \alpha^2, -\frac{2 \alpha}{r_2} + \alpha^2\right]
+\end{align}
+
+
+print('Hello, World!')
+
+
+------
+
+Write a Python class for Hamiltonian to evaluate electron-electron and electron-ion potentials of a helium atom from the given `configs`, which has shape (nconf, nelec, ndim) where nconf is the number of configurations, nelec is the number of electrons (2 for helium), ndim is the number of spatial dimensions (usually 3)
+Background
+
+The Hamiltonian is given by
+
+\begin{align}
+H &= -\frac{1}{2} \nabla_{1}^2 - \frac{1}{2} \nabla_{2}^2 - \frac{2}{r_1} - \frac{2}{r_2} + \frac{1}{r_{12}}.
+\end{align}
+
+
+print('Hello, World!')
+
+
+------
+
+Write a Python function that performs Metropolis algorithms given the electron positions `configs`, a WaveFunction object `wf`, and a Hamiltonian object `hamiltonian`, using timestep `tau`, and number of steps `nsteps`
+Background
+
+Given the current position $\mathbf{r} = \{\mathbf{r}_1, \mathbf{r}_2\}$, propose a new move 
+
+\begin{align}
+\mathbf{r}^{\prime} &= \mathbf{r} + \sqrt{\tau} \chi,
+\end{align}
+
+where $\chi$ is a random number from the standard normal distribution.
+
+Accept the proposed move with the acceptance probability
+
+\begin{align}
+a &= \frac{|\psi(\mathbf{r}^{\prime})|^2}{|\psi(\mathbf{r})|^2}.
+\end{align}
+
+
+print('Hello, World!')
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Calculate the kinetic energy, electron-ion potential energy, and electron-electron potential energy and their error bars, using `metropolis` defined in . Inputs are configs of shape `(nconf, nelec, ndim)` where: ncon is the number of configurations, nelec is the number of electrons (2 for helium), ndim is the number of spatial dimensions (usually 3), number of Metropolis steps `nsteps`, step size `tau`, exponential decay factor for the wavefunction `alpha`, and atomic number `Z` (always 2 for Helium).
+
+
+def calc_energy(configs, nsteps, tau, alpha, Z):
+    '''Args:
+        configs (np.array): electron coordinates of shape (nconf, nelec, ndim) where nconf is the number of configurations, nelec is the number of electrons (2 for helium), ndim is the number of spatial dimensions (usually 3)
+        nsteps (int): number of Metropolis steps
+        tau (float): step size
+        alpha (float): exponential decay factor for the wave function
+        Z (int): atomic number
+    Returns:
+        energy (list of float): kinetic energy, electron-ion potential, and electron-electron potential
+        error (list of float): error bars of kinetic energy, electron-ion potential, and electron-electron potential
+    '''
+
+    return energy, error
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

@@ -1,0 +1,92 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Write down the matrix, $\mathbf{B}$, that transforms $(h,k,l)$ coordinates from the reciprocal lattice system to $(q_x,q_y,q_z)$ coordinates in the right-handed Cartesian system.  Let's assume they share an identical origin, with $\mathbf{\hat{x}}^*//\mathbf{\hat{a}}^*$ and $\mathbf{\hat{z}}^*//(\mathbf{\hat{a}}^* \times \mathbf{\hat{b}}^*)$. The direct lattice parameters $(a,b,c,\alpha,\beta,\gamma)$ are given in units of Å and degree. Additionally, we will follow the convention $\mathbf{a_i} \cdot \mathbf{b_j} = \delta_{ij}$, with {$\mathbf{a_i}$} and {$\mathbf{b_i}$} representing the primitive vectors of crystal lattice and reciprocal lattice respectively [<u>duplicate Xray_conversion-I step </u>]
+Background
+The reciprocal lattice vectors {$\mathbf{b}_i$} are given by:
+$$\mathbf{b}_i = \frac{\mathbf{a}_j\times\mathbf{a}_k}{\mathbf{a}_i\cdot(\mathbf{a}_j\times\mathbf{a}_k)}$$
+
+
+def Bmat(pa):
+    '''Calculate the B matrix.
+    Input
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    Output
+    B: a 3*3 matrix, float
+    '''
+    a, b, c, alpha, beta, gamma = pa
+    
+    # Convert angles from degrees to radians
+    alpha_rad = np.radians(alpha)
+    beta_rad = np.radians(beta)
+    gamma_rad = np.radians(gamma)
+    
+    cos_alpha = np.cos(alpha_rad)
+    cos_beta = np.cos(beta_rad)
+    cos_gamma = np.cos(gamma_rad)
+    sin_gamma = np.sin(gamma_rad)
+    
+    # Compute the term for unit cell volume calculation
+    S = 1 - cos_alpha**2 - cos_beta**2 - cos_gamma**2 + 2 * cos_alpha * cos_beta * cos_gamma
+    sqrt_S = np.sqrt(S)
+    
+    # Construct direct lattice vectors in Cartesian coordinates
+    a1 = np.array([a, 0.0, 0.0])
+    a2 = np.array([b * cos_gamma, b * sin_gamma, 0.0])
+    a3x = c * cos_beta
+    a3y = c * (cos_alpha - cos_beta * cos_gamma) / sin_gamma
+    a3z = c * sqrt_S / sin_gamma
+    a3 = np.array([a3x, a3y, a3z])
+    
+    # Calculate unit cell volume
+    V = np.dot(a1, np.cross(a2, a3))
+    
+    # Compute reciprocal lattice vectors
+    b1 = np.cross(a2, a3) / V
+    b2 = np.cross(a3, a1) / V
+    b3 = np.cross(a1, a2) / V
+    
+    # Construct B matrix with reciprocal vectors as columns
+    B = np.column_stack((b1, b2, b3))
+    
+    return B
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+The detector plane has roll, pitch, and yaw angles. In the lab coordinate system, yaw $\Psi$ represents rotation along the $+\mathbf{\hat{z}}$ axis, pitch $\Theta$ along the $+\mathbf{\hat{y}}$ axis, and roll $\Phi$ along the $+\mathbf{\hat{x}}$ axis, with the rotation sequence as yaw $\rightarrow$ pitch $\rightarrow$ roll. Write down the momentum transfer $\vec{Q} = \vec{k_s} - \vec{k_i}$ at detector pixel $(x_{det},y_{det})$ in the lab coordinate system, where $\vec{k_s}$ and $\vec{k_i}$ are scattered and incident beam respectively. In the lab coordinate, $+\mathbf{\hat{x}}$ aligns with the incident beam direction, while $+\mathbf{\hat{z}}$ points vertically upwards. In the detector coordinate, $\mathbf{\hat{x}}_{det}//-\mathbf{\hat{y}}$ and $\mathbf{\hat{y}}_{det}//-\mathbf{\hat{z}}$ if detector plane is normal to the incident beam
+Background
+The detector rotation matrix is defined as $\mathbf{D} = R_{\mathbf{\hat{x}}}(\Phi)R_{\mathbf{\hat{y}}}(\Theta)R_{\mathbf{\hat{z}}}(\Psi)$
+
+def q_cal_p(p, b_c, det_d, p_s, wl, yaw, pitch, roll):
+    '''Calculate the momentum transfer Q at detector pixel (x,y). Here we use the convention of k=1/\lambda,
+    k and \lambda are the x-ray momentum and wavelength respectively
+    Input
+    p: detector pixel (x,y), a tuple of two integer
+    b_c: incident beam center at detector pixel (xc,yc), a tuple of float
+    det_d: sample distance to the detector, float in the unit of mm
+    p_s: detector pixel size, and each pixel is a square, float in the unit of mm
+    wl: X-ray wavelength, float in the unit of angstrom
+    yaw,pitch,roll: rotation angles of the detector, float in the unit of degree
+    Output
+    Q: a 3x1 matrix, float in the unit of inverse angstrom
+    '''
+
+    return Q
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

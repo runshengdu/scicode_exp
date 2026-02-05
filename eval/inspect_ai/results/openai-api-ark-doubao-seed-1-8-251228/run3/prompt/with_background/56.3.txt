@@ -1,0 +1,121 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+From the definition, there are R factorial possible depletion orders. Due to the given preference lists, some of them are logically impossible (For example, if all the preference lists are [1, 2, 3, 4], resource 4 will not be the first to be depleted), so you need to filter them out. Write a function allowed_orders to do this task, where the input is pref_list, and the output is an list of n_allowed by R, where n_allowed is the number of allowed depletion orders.
+
+
+
+def allowed_orders(pref):
+    '''Check allowed depletion orders for a set of species with given preference orders
+    Input:
+    pref: species' preference order, 2d numpy array with dimensions [N, R] and int elements between 1 and R
+    Output:
+    allowed_orders_list: n_allowed by R, list of tuples with int elements betweem 1 and R. 
+    '''
+    allowed_orders_list = []
+    N, R = pref.shape  # Number of species, number of resources
+    all_permutations = itertools.permutations(range(1, R + 1))
+    
+    for perm in all_permutations:
+        available = set(range(1, R + 1))
+        valid = True
+        for o in perm:
+            if o not in available:
+                valid = False
+                break
+            
+            has_consumer = False
+            for s_pref in pref:
+                # Find the index of current resource in the species' preference list
+                idx = np.where(s_pref == o)[0][0]
+                # Resources that the species prefers over current resource
+                preferred_over = s_pref[:idx]
+                # Check if any preferred resource is still available
+                any_preferred_available = np.any(np.isin(preferred_over, list(available)))
+                if not any_preferred_available:
+                    has_consumer = True
+                    break  # No need to check other species
+            
+            if not has_consumer:
+                valid = False
+                break
+            
+            available.remove(o)
+        
+        if valid:
+            allowed_orders_list.append(perm)
+    
+    return allowed_orders_list
+
+
+------
+
+Implement a function that converts growth rates based on resources (g) to growth rates based on temporal niches (G) to determine what resources would be present in each temporal niche and make an output of G, where G[i, j] is the i-th species' growth rate in the j-th temporal niche. The input consists of 3 arrays. First, the growth rate g, where float element g[i, j] is i-th species' growth rate on j-th resource. Then, the preference list pref, where pref[i, j] is the resource index of the i-th species' j-th most preferred resource (Resources are indexed from 1 to R). For example, if pref[3, 0] is 2, it means the top choice for species 3 is resource 2. And the third input is the resource depletion order dep_order, a tuple of length R. dep_order[i] is the i-th depleted resource. The output G is an array of N by R.
+
+
+
+
+def G_mat(g, pref, dep_order):
+    '''Convert to growth rates based on temporal niches
+    Input
+    g: growth rates based on resources, 2d numpy array with dimensions [N, R] and float elements
+    pref: species' preference order, 2d numpy array with dimensions [N, R] and int elements between 1 and R
+    dep_order: resource depletion order, a tuple of length R with int elements between 1 and R
+    Output
+    G: "converted" growth rates based on temporal niches, 2d numpy array with dimensions [N, R]
+    '''
+    N, R = g.shape
+    G = np.zeros((N, R), dtype=float)
+    
+    for j in range(R):
+        # Resources depleted before the j-th temporal niche
+        depleted = set(dep_order[:j])
+        # Available resources at the start of the j-th niche
+        available = set(range(1, R + 1)) - depleted
+        available_list = list(available)
+        
+        # Create mask indicating which resources in preference lists are available
+        mask = np.isin(pref, available_list)
+        # Find index of first available resource for each species
+        first_available_idx = np.argmax(mask, axis=1)
+        # Get the chosen resource IDs for all species
+        chosen_resources = pref[np.arange(N), first_available_idx]
+        # Map to growth rates using 0-based column indexing for g
+        G[:, j] = g[np.arange(N), chosen_resources - 1]
+    
+    return G
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+For a given "converted" growth rate matrix G based on temporal niches and the dilution factor D, solve the system, find the lengths $t_i$ of the temporal niches, and determine if this is a feasible steady state of coexistence.
+Background
+For exponentially growing species $i$, its growth in one dilution cycle should satisfy that $\exp(\sum_j G_{\alpha j}t_j)=D$, or $\sum_j G_{\alpha j}t_j=\log D$. This is feasible only if the solution $t_i$'s exist, are unique, and all have positive values. Note that the value of D is actually unnecessary in this calculation.
+
+def check_G_feasibility(G, D):
+    '''Determine if a "converted" growth rate matrix G leads to a feasible coexistence. 
+    Input 
+    G: growth rate based on temporal niches, 2d numpy float array with dimensions [N, R]
+    D: dilution factor, float
+    Output
+    feasible: boolean
+    '''
+
+    return feasible
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import itertools
+import numpy as np
+from math import *
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

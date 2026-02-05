@@ -1,0 +1,79 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Express the radial part of the Schoedinger equation using a system of linear differential equations $y$ and $y'$, where $y$ is a function of $u(r)$ and $u'(r)$, and then define a function to solve for $y'$ if $y$ is given. Use $Z=1$.
+Background 
+
+The Schroedinger equation without the Hartree term is:
+
+\begin{eqnarray}
+(-\frac{\hbar^2}{2m}\nabla^2-\frac{Z e^2}{4\pi\varepsilon_0 r})\psi(\vec{r})=E \psi(\vec{r})
+\end{eqnarray}
+
+using ansatz:
+
+$\psi(\vec{r}) = Y_{lm}(\hat{r})\; u(r)/r$
+
+and introducing dimensionless variables:
+
+\begin{eqnarray}
+x = \frac{r}{r_B}\\
+\varepsilon = \frac{E}{E_0}
+\end{eqnarray}
+where
+\begin{eqnarray}
+&& r_B = \frac{4\pi\varepsilon_0 \hbar^2}{m e^2} \approx 0.529 A\\
+&& E_0 = \frac{\hbar^2}{2 m r_B^2} == Ry \approx 13.6 eV
+\end{eqnarray}
+
+we get the differential equation
+
+\begin{eqnarray}
+u''(x)-
+\left(\frac{l(l+1)}{x^2}-\frac{2Z}{x}-\varepsilon\right)u(x)=0
+\end{eqnarray}
+
+The Schoredinger equation can be rewritten in the form of a system of first order equations:
+
+\begin{eqnarray}
+y = \left(u(r),u'(r)\right)\\
+\frac{dy}{dr} = \left(u'(r),u''(r)\right)
+\end{eqnarray}
+
+
+print('Hello, World!')
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Define a function to perform the integral of $y'$ for given values of $l$ and $\varepsilon$ over a range of $r$ using Schroed_deriv(y,r,l,En) function. Start the integration from large $r$. After integration, normalize the result using Simpson's rule for numerical integration.
+
+
+def SolveSchroedinger(y0, En, l, R):
+    '''Integrate the derivative of y within a certain radius
+    Input 
+    y0: Initial guess for function and derivative, list of floats: [u0, u0']
+    En: energy, float
+    l:  angular momentum quantum number, int
+    R:  an 1d array (linespace) of radius (float)
+    Output
+    ur: the integration result, float
+    '''
+
+    return ur
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+from scipy import integrate, optimize
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

@@ -1,0 +1,65 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+For a given position weight matrix (PWM) of a protein of interest, strip the input into a numerical array while normalizing them such that each row is l1 normalized (so each line becomes a probability distribution) after adding 1 to each entry to avoid log divergence.
+
+
+
+def load_motif_from_df(data):
+    '''Input:
+    PWM matrix with keys 'A', 'C', 'G', 'T'
+    Output:
+    mat: (number of row of PWM matrix, 4) integer array, each row is a probability distribution
+    '''
+    # Extract the PWM values in the order of 'A', 'C', 'G', 'T'
+    pwm_array = data[['A', 'C', 'G', 'T']].values
+    # Add 1 to each entry to avoid log divergence
+    smoothed_array = pwm_array + 1
+    # Calculate row sums for L1 normalization
+    row_sums = smoothed_array.sum(axis=1, keepdims=True)
+    # Normalize each row to form a probability distribution
+    normalized_mat = smoothed_array / row_sums
+    return normalized_mat
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Compute the Kullback–Leibler divergence assuming the background distribution is uniform (A,T,C,G appears with equal probability) given a PWM
+Background
+Usage of this method in similar applications can be found in
+
+Akhter, S., Aziz, R. K., Kashef, M. T., Ibrahim, E. S., Bailey, B., & Edwards, R. A. (2013). Kullback-Leibler divergence in complete bacterial and phage genomes. Nucleic Acids Research, 41(8), e84.
+
+Das, M. K., & Dai, H. K. (2007). A survey of DNA motif finding algorithms. BMC Bioinformatics, 8(Suppl 7), S21.
+
+KL divergence is a relative entropy between two discrete distributions (in our case, P is the PWM's probability distribution, and Q is the uniform distribution)
+
+$$
+D_{KL}(P||Q) = \sum_{x\in \text{Sample Space}}P(x) \log \frac{P(x)}{Q(x)}
+$$
+
+def compute_kld(matrix):
+    '''Input:
+    (number of row of PWM matrix, 4) array, PWM
+    Output:
+    Kullback-Leibler divergence (float)
+    '''
+
+    return kld
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+import random
+from collections import Counter
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

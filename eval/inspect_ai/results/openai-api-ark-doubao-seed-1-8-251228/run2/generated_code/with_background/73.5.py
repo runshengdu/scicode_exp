@@ -1,0 +1,265 @@
+import numpy as np
+
+def Bmat(pa):
+    '''Calculate the B matrix.
+    Input
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    Output
+    B: a 3*3 matrix, float
+    '''
+    a, b, c, alpha_deg, beta_deg, gamma_deg = pa
+    # Convert angles from degrees to radians
+    alpha = np.radians(alpha_deg)
+    beta = np.radians(beta_deg)
+    gamma = np.radians(gamma_deg)
+    
+    # Construct direct lattice vectors in Cartesian coordinates
+    a1 = np.array([a, 0.0, 0.0])
+    a2_x = b * np.cos(gamma)
+    a2_y = b * np.sin(gamma)
+    a2 = np.array([a2_x, a2_y, 0.0])
+    
+    a3_x = c * np.cos(beta)
+    numerator_a3y = np.cos(alpha) - np.cos(beta) * np.cos(gamma)
+    denominator_a3y = np.sin(gamma)
+    a3_y = c * numerator_a3y / denominator_a3y
+    a3_z_sq = c**2 - a3_x**2 - a3_y**2
+    a3_z = np.sqrt(a3_z_sq)
+    a3 = np.array([a3_x, a3_y, a3_z])
+    
+    # Calculate unit cell volume
+    V = np.dot(a1, np.cross(a2, a3))
+    
+    # Compute reciprocal lattice vectors
+    b1 = np.cross(a2, a3) / V
+    b2 = np.cross(a3, a1) / V
+    b3 = np.cross(a1, a2) / V
+    
+    # Construct B matrix with reciprocal vectors as columns
+    B = np.column_stack((b1, b2, b3))
+    
+    return B
+
+
+def q_cal_p(p, b_c, det_d, p_s, wl, yaw, pitch, roll):
+    '''Calculate the momentum transfer Q at detector pixel (x,y). Here we use the convention of k=1/\lambda,
+    k and \lambda are the x-ray momentum and wavelength respectively
+    Input
+    p: detector pixel (x,y), a tuple of two integer
+    b_c: incident beam center at detector pixel (xc,yc), a tuple of float
+    det_d: sample distance to the detector, float in the unit of mm
+    p_s: detector pixel size, and each pixel is a square, float in the unit of mm
+    wl: X-ray wavelength, float in the unit of angstrom
+    yaw,pitch,roll: rotation angles of the detector, float in the unit of degree
+    Output
+    Q: a 3x1 matrix, float in the unit of inverse angstrom
+    '''
+    x, y = p
+    xc, yc = b_c
+    
+    # Calculate offset from beam center in millimeters
+    dx = (x - xc) * p_s
+    dy = (y - yc) * p_s
+    
+    # Convert rotation angles from degrees to radians
+    yaw_rad = np.radians(yaw)
+    pitch_rad = np.radians(pitch)
+    roll_rad = np.radians(roll)
+    
+    # Define individual rotation matrices (active rotation, right-handed)
+    # Rotation around +z axis (yaw)
+    cos_psi, sin_psi = np.cos(yaw_rad), np.sin(yaw_rad)
+    Rz = np.array([
+        [cos_psi, -sin_psi, 0.0],
+        [sin_psi, cos_psi, 0.0],
+        [0.0, 0.0, 1.0]
+    ])
+    
+    # Rotation around +y axis (pitch)
+    cos_theta, sin_theta = np.cos(pitch_rad), np.sin(pitch_rad)
+    Ry = np.array([
+        [cos_theta, 0.0, sin_theta],
+        [0.0, 1.0, 0.0],
+        [-sin_theta, 0.0, cos_theta]
+    ])
+    
+    # Rotation around +x axis (roll)
+    cos_phi, sin_phi = np.cos(roll_rad), np.sin(roll_rad)
+    Rx = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, cos_phi, -sin_phi],
+        [0.0, sin_phi, cos_phi]
+    ])
+    
+    # Combined rotation matrix (sequence: yaw -> pitch -> roll)
+    D = Rx @ Ry @ Rz
+    
+    # Offset vector from beam center to pixel in unrotated detector frame (lab coordinates)
+    offset_unrot = np.array([0.0, -dx, -dy])
+    
+    # Rotate the offset vector to account for detector rotation
+    offset_rot = D @ offset_unrot
+    
+    # Calculate pixel position in lab coordinates (mm)
+    pixel_pos = np.array([det_d, 0.0, 0.0]) + offset_rot
+    
+    # Unit vector in the direction of the scattered beam
+    s_magnitude = np.linalg.norm(pixel_pos)
+    s = pixel_pos / s_magnitude
+    
+    # Compute wavevectors (k = 1/λ, unit: 1/Å)
+    k = 1.0 / wl
+    k_i = np.array([k, 0.0, 0.0])
+    k_s = k * s
+    
+    # Calculate momentum transfer Q and reshape to 3x1 matrix
+    Q = (k_s - k_i).reshape(3, 1)
+    
+    return Q
+
+
+
+def Umat(t_c, t_g):
+    '''Write down the orientation matrix which transforms from bases t_c to t_g
+    Input
+    t_c, tuple with three elements, each element is a 3x1 matrix, float
+    t_g, tuple with three elements, each element is a 3x1 matrix, float
+    Output
+    U: 3x3 orthogonal matrix, float
+    '''
+    # Construct matrices with basis vectors as columns
+    T_c = np.column_stack(t_c)
+    T_g = np.column_stack(t_g)
+    
+    # Calculate orientation matrix using orthonormal basis property (inverse = transpose)
+    U = T_g @ T_c.T
+    
+    return U
+
+
+
+def get_hkl_p(p, z, b_c, det_d, p_s, wl, yaw, pitch, roll, pa, H1, H2, p1, p2, z1, z2, z_s, chi, phi):
+    '''Convert pixel (x,y) at frame z to reciprocal space (h,k,l)
+    Input
+    p: detector pixel (x,y), a tuple of two integer
+    z: frame number, integer
+    b_c: incident beam center at detector pixel (xc,yc), a tuple of float
+    det_d: sample distance to the detector, float in the unit of mm
+    p_s: detector pixel size, and each pixel is a square, float in the unit of mm
+    wl: X-ray wavelength, float in the unit of angstrom
+    yaw,pitch,roll: rotation angles of the detector, float in the unit of degree
+    pa = (a,b,c,alpha,beta,gamma)
+    a,b,c: the lengths a, b, and c of the three cell edges meeting at a vertex, float in the unit of angstrom
+    alpha,beta,gamma: the angles alpha, beta, and gamma between those edges, float in the unit of degree
+    H1 = (h1,k1,l1),primary reflection, h1,k1,l1 is integer
+    H2 = (h2,k2,l2),secondary reflection, h2,k2,l2 is integer
+    p1: detector pixel (x1,y1), a tuple of two integer
+    p2: detector pixel (x2,y2), a tuple of two integer
+    z1,z2: frame number, integer
+    z_s: step size in the rotation, float in the unit of degree
+    chi,phi: diffractometer angles, float in the unit of degree
+    Output
+    q: 3x1 matrix, float
+    '''
+    # Step 1: Calculate B matrix using direct lattice parameters
+    B = Bmat(pa)
+    
+    # Step 2: Compute crystal Cartesian coordinates for primary/secondary reflections
+    H1_arr = np.array(H1).reshape(3, 1)
+    q1 = B @ H1_arr
+    H2_arr = np.array(H2).reshape(3, 1)
+    q2 = B @ H2_arr
+    
+    # Step 3: Build orthonormal basis {t_c} from crystal Cartesian vectors
+    # t1_c parallel to q1
+    t1_c = q1 / np.linalg.norm(q1)
+    # t3_c parallel to q1 × q2
+    cross_q1q2 = np.cross(q1.flatten(), q2.flatten()).reshape(3, 1)
+    t3_c = cross_q1q2 / np.linalg.norm(cross_q1q2)
+    # t2_c completes right-handed orthonormal triple
+    t2_c = np.cross(t3_c.flatten(), t1_c.flatten()).reshape(3, 1)
+    t_c = (t1_c, t2_c, t3_c)
+    
+    # Step 4: Convert diffractometer angles to radians
+    chi_rad = np.radians(chi)
+    phi_rad = np.radians(phi)
+    
+    # Step 5: Precompute common rotation matrices for diffractometer
+    # Rotation around +x axis (chi)
+    cos_chi, sin_chi = np.cos(chi_rad), np.sin(chi_rad)
+    Rx_chi = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, cos_chi, -sin_chi],
+        [0.0, sin_chi, cos_chi]
+    ])
+    # Rotation around +z axis (phi)
+    cos_phi, sin_phi = np.cos(phi_rad), np.sin(phi_rad)
+    Rz_phi = np.array([
+        [cos_phi, -sin_phi, 0.0],
+        [sin_phi, cos_phi, 0.0],
+        [0.0, 0.0, 1.0]
+    ])
+    
+    # Step 6: Calculate Q1 (pre-rotation momentum transfer for primary reflection)
+    theta1_deg = z1 * z_s
+    theta1_rad = np.radians(theta1_deg)
+    cos_theta1, sin_theta1 = np.cos(theta1_rad), np.sin(theta1_rad)
+    # Rotation around -y axis (theta1)
+    Ry_minus_theta1 = np.array([
+        [cos_theta1, 0.0, -sin_theta1],
+        [0.0, 1.0, 0.0],
+        [sin_theta1, 0.0, cos_theta1]
+    ])
+    G1 = Ry_minus_theta1 @ Rx_chi @ Rz_phi
+    # Measured momentum transfer in lab coordinates
+    Q1_measured = q_cal_p(p1, b_c, det_d, p_s, wl, yaw, pitch, roll)
+    # Rotate back to pre-rotation orientation
+    Q1 = G1.T @ Q1_measured
+    
+    # Step 7: Calculate Q2 (pre-rotation momentum transfer for secondary reflection)
+    theta2_deg = z2 * z_s
+    theta2_rad = np.radians(theta2_deg)
+    cos_theta2, sin_theta2 = np.cos(theta2_rad), np.sin(theta2_rad)
+    Ry_minus_theta2 = np.array([
+        [cos_theta2, 0.0, -sin_theta2],
+        [0.0, 1.0, 0.0],
+        [sin_theta2, 0.0, cos_theta2]
+    ])
+    G2 = Ry_minus_theta2 @ Rx_chi @ Rz_phi
+    Q2_measured = q_cal_p(p2, b_c, det_d, p_s, wl, yaw, pitch, roll)
+    Q2 = G2.T @ Q2_measured
+    
+    # Step 8: Build orthonormal basis {t_g} from pre-rotation momentum transfers
+    t1_g = Q1 / np.linalg.norm(Q1)
+    cross_Q1Q2 = np.cross(Q1.flatten(), Q2.flatten()).reshape(3, 1)
+    t3_g = cross_Q1Q2 / np.linalg.norm(cross_Q1Q2)
+    t2_g = np.cross(t3_g.flatten(), t1_g.flatten()).reshape(3, 1)
+    t_g = (t1_g, t2_g, t3_g)
+    
+    # Step 9: Calculate orientation matrix U
+    U = Umat(t_c, t_g)
+    
+    # Step 10: Process input pixel to get (h,k,l)
+    # Calculate diffractometer rotation matrix for current frame z
+    theta_z_deg = z * z_s
+    theta_z_rad = np.radians(theta_z_deg)
+    cos_theta_z, sin_theta_z = np.cos(theta_z_rad), np.sin(theta_z_rad)
+    Ry_minus_thetaz = np.array([
+        [cos_theta_z, 0.0, -sin_theta_z],
+        [0.0, 1.0, 0.0],
+        [sin_theta_z, 0.0, cos_theta_z]
+    ])
+    G_z = Ry_minus_thetaz @ Rx_chi @ Rz_phi
+    # Measured momentum transfer for input pixel
+    Q_measured = q_cal_p(p, b_c, det_d, p_s, wl, yaw, pitch, roll)
+    # Rotate back to pre-rotation orientation
+    Q_prime = G_z.T @ Q_measured
+    
+    # Step 11: Convert to reciprocal lattice coordinates (h,k,l)
+    UB = U @ B
+    inv_UB = np.linalg.inv(UB)
+    hkl = inv_UB @ Q_prime
+    
+    return hkl

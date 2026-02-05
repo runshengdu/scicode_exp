@@ -1,0 +1,58 @@
+import numpy as np
+import scipy.interpolate as interpolate
+
+
+
+def q_cal(th, gamma, E0, omega):
+    '''Calculate the in-plane momentum q, and out-of-plane momenta of the incident and scattered electron k_i_z and k_s_z.
+    Ensure that the signs of q, k_i_z and k_s_z are correctly represented.
+    Input 
+    th, angle between the incident electron and the sample surface normal is 90-th, a list of float in the unit of degree
+    gamma, angle between the incident and scattered electron, a list of float in the unit of degree
+    E0, incident electron energy, float in the unit of eV
+    omega, energy loss, a list of float in the unit of eV
+    Output
+    Q: a tuple (q,k_i_z,k_s_z) in the unit of inverse angstrom, where q is in-plane momentum, 
+       and k_i_z and k_s_z are out-of-plane momenta of the incident and scattered electron    
+    '''
+    # Physical constants
+    m_e_c2 = 510998.95  # eV, m_e*c²
+    hc = 12398.4193     # eV·Å, h*c converted from eV·nm
+    hbar_c = hc / (2 * np.pi)  # eV·Å, ℏ*c
+    
+    # Convert input lists to numpy arrays for element-wise operations
+    th_arr = np.array(th)
+    gamma_arr = np.array(gamma)
+    omega_arr = np.array(omega)
+    
+    # Convert angles from degrees to radians
+    th_rad = np.radians(th_arr)
+    gamma_rad = np.radians(gamma_arr)
+    
+    # Calculate incident electron momentum magnitude (Å⁻¹)
+    k0 = np.sqrt(2 * m_e_c2 * E0) / hbar_c
+    
+    # Calculate scattered electron momentum magnitude for each energy loss (Å⁻¹)
+    ks_arr = np.sqrt(2 * m_e_c2 * (E0 - omega_arr)) / hbar_c
+    
+    # Out-of-plane momentum of incident electron (+z direction)
+    k_i_z_arr = k0 * np.sin(th_rad)
+    
+    # In-plane momentum of incident electron (+x direction)
+    k_i_x_arr = k0 * np.cos(th_rad)
+    
+    # In-plane momentum of scattered electron (+x direction)
+    k_s_x_arr = ks_arr * np.cos(th_rad - gamma_rad)
+    
+    # In-plane momentum transfer q = k_s_x - k_i_x
+    q_arr = k_s_x_arr - k_i_x_arr
+    
+    # Out-of-plane momentum of scattered electron (-z direction)
+    k_s_z_arr = ks_arr * np.sin(th_rad - gamma_rad)
+    
+    # Convert numpy arrays back to lists to match input type
+    q = q_arr.tolist()
+    k_i_z = k_i_z_arr.tolist()
+    k_s_z = k_s_z_arr.tolist()
+    
+    return (q, k_i_z, k_s_z)

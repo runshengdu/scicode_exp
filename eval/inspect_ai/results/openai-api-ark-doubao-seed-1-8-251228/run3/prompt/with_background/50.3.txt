@@ -1,0 +1,116 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Use Monte Carlo method to find the thermal equilibrium state given an inital state and given interaction coefficients $J_{ij}$. If using functions from np.random, only "randint" and "rand" are allowed in this part.
+Background
+Considered as the simpliest model of spin glass, the Sherrington-Kirkpatrick Hamiltonian is given by:
+$$
+H_{SK} = -\sum_{i < j} J_{ij}\sigma_i \sigma_j
+$$
+assuming the absence of a external magtetic field and full connection between all the spins.
+In this Monte Carlo simulation, we should use Metropolis-Hastings algorithm to find the equilibrium state.
+
+
+def find_equilibrium(spins, N, T, J, num_steps):
+    '''Find the thermal euilibrium state of a given spin system
+    Input:
+    spins: starting spin state, 1D array of 1 and -1
+    N: size of spin system, int
+    T: temprature, float
+    J: interaction matrix, 2D array of floats
+    num_steps: number of sampling steps per spin in the Monte Carlo simulation, int
+    Output:
+    spins: final spin state after Monte Carlo simulation, 1D array of 1 and -1
+    '''
+    total_steps = num_steps * N
+    for _ in range(total_steps):
+        # Select random spin index
+        k = np.random.randint(0, N)
+        
+        # Calculate sum of interactions for j < k (using column k)
+        sum_j_lt_k = np.dot(J[:k, k], spins[:k])
+        # Calculate sum of interactions for j > k (using row k)
+        sum_j_gt_k = np.dot(J[k, k+1:], spins[k+1:])
+        total_interaction = sum_j_lt_k + sum_j_gt_k
+        
+        # Compute energy change if we flip spin k
+        delta_H = 2 * spins[k] * total_interaction
+        
+        # Metropolis acceptance criterion
+        if delta_H <= 0:
+            # Always accept favorable energy change
+            spins[k] = -spins[k]
+        else:
+            # Compute acceptance probability for unfavorable change
+            if T > 0:
+                acceptance_prob = np.exp(-delta_H / T)
+                # Generate random number for acceptance check
+                if np.random.rand() < acceptance_prob:
+                    spins[k] = -spins[k]
+            # At T=0, never accept unfavorable changes
+    return spins
+
+
+------
+
+In the replica method, given an emsemble of replicas at thermal equilibrium, calculate the overlaps of the replicas and return the results in ascending order.
+Background
+Replica symmetry breaking can be detected using the Parisi overlap fucntion. For two replicas, $R_a$ and $R_b$, the overlap between them is calculated as
+$$
+\frac{R_a^T\cdot R_b}{N}
+$$
+
+
+def calculate_overlap(replicas):
+    '''Calculate all overlaps in an emsemble of replicas
+    Input:
+    replicas: list of replicas, list of 1D arrays of 1 and -1
+    Output:
+    overlaps: pairwise overlap values between all replicas, 1D array of floats, sorted
+    '''
+    M = len(replicas)
+    if M < 2:
+        return np.array([])
+    
+    N = len(replicas[0])
+    # Generate all unique pairwise overlaps
+    overlaps_list = [np.dot(replicas[i], replicas[j]) / N for i in range(M) for j in range(i + 1, M)]
+    
+    # Sort overlaps in ascending order
+    overlaps_list.sort()
+    
+    # Convert to numpy array
+    return np.array(overlaps_list)
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+To determine if replica symmetry breaking occurs, analyze the overall overlap distribution of the system.
+Background
+If the system maintains replica symmetry, the overlap values should follow a normal distribution peaked around $0$ with a standard deviation $1/\sqrt{N}$. A broader distribution or multi-modal behavior indicates potential replica symmetry breaking. Note that intrinsic fluctuations and finite-size effects can cause small deviations from the expected Gaussian peak even when the replica symmetry is intact; allow some reasonable deviation in the judging criterion.
+
+def analyze_rsb(overlaps, N):
+    '''Analyze if the overlap distribution to identify broad peak or multimodal behavior, indicating potential replica symmetry breaking.
+    Input:
+    overlaps: all overlap values between replicas from all realization, 1D array of floats
+    N: size of spin system, int
+    Output:
+    potential_RSB: True if potential RSB is indicated, False otherwise, boolean
+    '''
+
+    return potential_RSB
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

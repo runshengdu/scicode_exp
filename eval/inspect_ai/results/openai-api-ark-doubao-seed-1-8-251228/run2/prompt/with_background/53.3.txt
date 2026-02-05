@@ -1,0 +1,164 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+The Lotka-Volterra equation for a simple predator-prey system is given by : $$\frac{dx}{dt} = \alpha x - \beta xy$$ $$\frac{dy}{dt} = \beta xy - \gamma y$$ where $x$ is the population of preys and $y$ is the population of predators. Given current porpolations and parameters in Lotka-Volterra equation, perform a single-time update of the Lotka-Volterra equations using the Gillespie algorithm. To sample the time step, use NumPy's exponential distribution directly.
+Background
+Gillespie Algorithm is a computational method used to simulate the dynamics of stochastic systems as chemical reactions. At one step, each reaction $i$ is associated with a prospensity $a_i$, calculated as the product of the reaction rate and the populations of the species involved. The time until the next reaction occurs is sampled from an exponential distribution with a rate equal to the sum of all propensities, given by the probability density function: $$f(\Delta t) = \frac{1}{a} \exp\left(-\frac{\Delta t}{a}\right)$$ where $a = \sum a_i$. At each time step, only one reaction occurs, and the reaction $i$ will be selected with the probability $P_i = \frac{a_i}{\sum a_i}$.
+
+
+def gillespie_step(prey, predator, alpha, beta, gamma):
+    '''Perform one step of the Gillespie simulation for a predator-prey system.
+    Input:
+    prey: current population of prey, integer
+    predator: current population of predators, integer
+    alpha: prey birth rate, float
+    beta: predation rate, float
+    gamma: predator death rate, float
+    Output:
+    time_step: time duration until next event occurs, a float; None if no event occurs
+    prey: updated population of prey, integer
+    predator: updated population of predators, integer
+    event: a string describing the event that occurrs ("prey_birth", "predation", or "predator_death"); None if no event occurs
+    '''
+    # Calculate propensities for each reaction
+    a1 = alpha * prey  # Prey birth propensity
+    a2 = beta * prey * predator  # Predation propensity
+    a3 = gamma * predator  # Predator death propensity
+    
+    total_a = a1 + a2 + a3
+    
+    # Check if no reactions can occur
+    if total_a <= 0.0:
+        return (None, prey, predator, None)
+    
+    # Sample time step from exponential distribution with rate equal to total propensity
+    time_step = np.random.exponential(scale=1.0 / total_a)
+    
+    # Calculate probabilities for each reaction
+    p1 = a1 / total_a
+    p2 = a2 / total_a
+    
+    # Randomly select which reaction to occur
+    r = np.random.rand()
+    if r < p1:
+        # Prey birth event
+        prey += 1
+        event = "prey_birth"
+    elif r < p1 + p2:
+        # Predation event: prey dies, predator increases
+        prey -= 1
+        predator += 1
+        event = "predation"
+    else:
+        # Predator death event
+        predator -= 1
+        event = "predator_death"
+    
+    return (time_step, prey, predator, event)
+
+
+------
+
+Given initial conditions and parameters, simulate the Lotka-Volterra equation up to a specified final time T. The simulation ends immediately if no event occurs at a given step. Record both the time coordinates and the evolution of populations. Identify which of the following ecological events occurred during their evolution: "coexistence", "predator extinction", or "mutual extinction".
+Background
+"Coexistence" indicates that both predator and prey survive; "predator extinction" means only predator polpulation goes to zero, and usually the prey population will blow up; "mutual extinction" happens when prey die out first and the predator will die out eventually due to lack of food.
+
+
+def evolve_LV(prey, predator, alpha, beta, gamma, T):
+    '''Simulate the predator-prey dynamics using the Gillespie simulation algorithm.
+    This function tracks and records the populations of prey and predators and the times at which changes occur.
+    Input:
+    prey: initial population of prey, integer
+    predator: initial population of predators, integer
+    alpha: prey birth rate, float
+    beta: predation rate, float
+    gamma: predator death rate, float
+    T: total time of the simulation, float
+    Output:
+    time_cor: time coordinates of population evolution, 1D array of floats
+    prey_evol: evolution history of prey population, 1D array of floats (same size as time_cor)
+    predator_evol: evolution history of predator population, 1D array of floats (same size as time_cor)
+    eco_event: A string describing the ecological event ("coexistence", "predator extinction", or "mutual extinction").
+    '''
+    # Initialize tracking arrays with initial state at time 0
+    time_cor = [0.0]
+    prey_evol = [prey]
+    predator_evol = [predator]
+    current_time = 0.0
+
+    while True:
+        # Get current population state
+        current_prey = prey_evol[-1]
+        current_predator = predator_evol[-1]
+
+        # Execute one Gillespie step
+        delta_t, new_prey, new_predator, event = gillespie_step(current_prey, current_predator, alpha, beta, gamma)
+
+        # Terminate if no further events can occur
+        if delta_t is None:
+            break
+
+        # Calculate time of next event
+        next_time = current_time + delta_t
+
+        # Stop simulation if next event exceeds final time T
+        if next_time > T:
+            break
+
+        # Update state and tracking arrays
+        current_time = next_time
+        time_cor.append(current_time)
+        prey_evol.append(new_prey)
+        predator_evol.append(new_predator)
+
+    # Convert lists to numpy arrays as specified
+    time_cor = np.array(time_cor, dtype=float)
+    prey_evol = np.array(prey_evol, dtype=float)
+    predator_evol = np.array(predator_evol, dtype=float)
+
+    # Determine the ecological event based on final state
+    final_prey = prey_evol[-1]
+    final_predator = predator_evol[-1]
+
+    if final_prey > 0 and final_predator > 0:
+        eco_event = "coexistence"
+    elif final_prey > 0 and final_predator == 0:
+        eco_event = "predator extinction"
+    else:
+        eco_event = "mutual extinction"
+
+    return time_cor, prey_evol, predator_evol, eco_event
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+If the system reaches "coexistence", we want to find the periodicity of oscillation. Given dynamical population data with uneven time steps and stochasticity, idenify the periodicity of the function up to one decimal point accuracy.
+
+
+def spectral_periodicity(t, population):
+    '''Estimate the periodicity of population with uneven time step and stochasticity.
+    Input:
+    t: time coordinates of population evolution, 1D array of floats
+    population: evolution history of population of some species, 1D array of floats (same size as t)
+    Output:
+    periodicity: estimated periodicity, float rounded up to one decimal point.
+    '''
+
+    return periodicity
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+from scipy.interpolate import interp1d
+from numpy.fft import fft, fftfreq
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

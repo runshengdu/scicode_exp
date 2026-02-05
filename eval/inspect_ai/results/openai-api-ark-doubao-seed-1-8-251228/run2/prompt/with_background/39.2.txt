@@ -1,0 +1,95 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Given the refractive indices of the two layers ($n_1$ and $n_2$), and that the layer thickness is set as quarter-wavelength of $\lambda_b$. Provide a function to calculate the phase shift $\phi$ of an incident light with the wavelength $\lambda_{in}$, and therefore the propagate matrix. The output should be a tuple of the matrix element (A,B,C,D).
+Background
+Phase shift for a specific insident wavelength $\lambda$ is
+
+$$\phi=\frac{\pi \lambda_b}{2 \lambda}$$
+
+where $\lambda_b$ is the Bragg resonant wavelength, which in our case is 980 nm.
+
+The propagate matrix of one period of $n_1$/$n_2$ bilayer is
+
+$$\mathbf{M}=\mathbf{B}_{12} \mathbf{B}_{21}=\left[\begin{array}{ll}A & B \\ C & D\end{array}\right]$$
+
+where
+
+$$\begin{gathered}A=\frac{\left(n_1+n_2\right)^2}{4 n_1 n_2} e^{-2 i \phi}-\frac{\left(n_1-n_2\right)^2}{4 n_1 n_2} \\ \\ B=\frac{n_2^2-n_1^2}{4 n_1 n_2}\left(1-e^{2 i \phi}\right) \\ \\C=\operatorname{conj}(B), \quad D=\operatorname{conj}(A)\end{gathered}$$
+
+where $n_1$ and $n_2$ are the refractive indices of the two different material layers.
+
+
+
+def matrix_elements(lambda_in, lambda_b, n1, n2):
+    '''Calculates the phase shift and the A/B/C/D matrix factors for a given wavelength.
+    Input:
+    lambda_in (float): Wavelength of the incident light in nanometers.
+    lambda_b (float): Resonant wavelength in nanometers.
+    n1 (float): Refractive index of the first material.
+    n2 (float): Refractive index of the second material.
+    Output:
+    matrix (2 by 2 numpy array containing 4 complex numbers): Matrix used in the calculation of the transmission coefficient.
+    '''
+    # Calculate phase shift phi
+    phi = (np.pi * lambda_b) / (2 * lambda_in)
+    
+    # Compute coefficient terms for A
+    term1_a = (n1 + n2) ** 2 / (4 * n1 * n2)
+    term2_a = (n1 - n2) ** 2 / (4 * n1 * n2)
+    A = term1_a * np.exp(-2j * phi) - term2_a
+    
+    # Compute B
+    coeff_b = (n2 ** 2 - n1 ** 2) / (4 * n1 * n2)
+    B = coeff_b * (1 - np.exp(2j * phi))
+    
+    # Compute conjugate terms for C and D
+    C = np.conj(B)
+    D = np.conj(A)
+    
+    # Construct and return the 2x2 matrix
+    matrix = np.array([[A, B], [C, D]])
+    
+    return matrix
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Provide a function that calculates the pseudo-angle $\theta$, given the propagate matrix of multiple DBR stacks as $\mathbf{M}=\left[\begin{array}{ll}A & B \\ C & D\end{array}\right]$. If the value of (A + D) / 2 is greater than 1, keep the real part of $\theta$ as $\pi$.
+Background
+$\theta$ comes from the matrix elements that
+
+$$\cos \theta=(A+D) / 2$$
+
+However, When $|(A+D) / 2|>1$, the solution for $\theta$ becomes complex
+$$
+\theta=m \pi+i \alpha
+$$
+where $m$ is assumed to be 1 for simplicity.
+
+def get_theta(A, D):
+    '''Calculates the angle theta used in the calculation of the transmission coefficient.
+    If the value of (A + D) / 2 is greater than 1, keep the real part of theta as np.pi.
+    Input:
+    A (complex): Matrix factor from the calculation of phase shift and matrix factors.
+    D (complex): Matrix factor from the calculation of phase shift and matrix factors.
+    Output:
+    theta (complex): Angle used in the calculation of the transmission coefficient.
+    '''
+
+    return theta
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

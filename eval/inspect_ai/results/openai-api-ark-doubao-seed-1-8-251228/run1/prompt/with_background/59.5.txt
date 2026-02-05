@@ -1,0 +1,279 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Implement a function that creates the rotation operator gates $R_x$, $R_y$, and $R_z$ with the given angle $\theta$.
+Background
+The rotation operator gates are:
+$$
+\begin{aligned}
+R_x(\theta) & =\left(\begin{array}{cc}
+\cos (\theta / 2) & -i \cdot \sin (\theta / 2) \\
+-i \cdot \sin (\theta / 2) & \cos (\theta / 2)
+\end{array}\right) \\
+R_y(\theta) & =\left(\begin{array}{cc}
+\cos (\theta / 2) & -\sin (\theta / 2) \\
+\sin (\theta / 2) & \cos (\theta / 2)
+\end{array}\right) \\
+R_z(\theta) & =\left(\begin{array}{cc}
+\exp (-i \theta / 2) & 0 \\
+0 & \exp (i \theta / 2)
+\end{array}\right)
+\end{aligned}
+$$
+
+
+def rotation_matrices(axis, theta):
+    '''Create rotation matrices Rx, Ry, and Rz with the given angle theta.
+    Inputs:
+    axis : int
+        The rotation axis. 1 = x, 2 = y, 3 = z.
+    theta : float
+        The rotation angle.
+    Output:
+    R : matrix of shape(2, 2)
+        The rotation matrix.
+    '''
+    theta_half = theta / 2
+    if axis == 1:
+        cos_h = np.cos(theta_half)
+        sin_h = np.sin(theta_half)
+        R = np.array([[cos_h, -1j * sin_h],
+                      [-1j * sin_h, cos_h]])
+    elif axis == 2:
+        cos_h = np.cos(theta_half)
+        sin_h = np.sin(theta_half)
+        R = np.array([[cos_h, -sin_h],
+                      [sin_h, cos_h]])
+    elif axis == 3:
+        R = np.array([[exp(-1j * theta_half), 0],
+                      [0, exp(1j * theta_half)]])
+    else:
+        raise ValueError("Axis must be 1 (x), 2 (y), or 3 (z)")
+    return R
+
+
+------
+
+Write a function to generate the trial wavefunction $
+|\psi\rangle$ depending on one parameter $\theta$ with the Unitary Coupled Cluster (UCC) ansatz, i.e., $
+|\psi(\theta)\rangle=\exp \left(-i \theta Y_1 X_2\right)|01\rangle
+$, in terms of a series of quantum gates acting on the initial two-qubit state $|00\rangle
+$.
+Background: The Hartree-Fock state $|01\rangle$ can be obtained from $|00\rangle = {\left( {\begin{array}{*{20}{c}}
+1&0&0&0
+\end{array}} \right)^T}$ by acting the rotation $R_x(\pi)$ on the second qubit. The unitary transformation $U(\theta)=\exp \left(-i \theta Y_1 X_2 \right)$ can be given by sequentially applying the following quantum logic gates:
+$R_y(\pi/2)$ rotation gate on the first qubit and $R_x (-\pi/2)$ rotation gate on the second qubit.
+2. CNOT12
+3. $R_z(-2\theta)$ rotation gate on the second qubit.
+4. CNOT12
+5. $R_y(-\pi/2)$ rotation gate on the first qubit and $R_x (\pi/2)$ roation gate on the second qubit.
+
+
+def create_ansatz(theta):
+    '''Create the ansatz wavefunction with a given theta.
+    Input:
+    theta : float
+        The only variational parameter.
+    Output:
+    ansatz : array of shape (4, 1)
+        The ansatz wavefunction.
+    '''
+    # Initial state |00> as 4x1 column vector
+    psi = np.array([[1], [0], [0], [0]], dtype=complex)
+    
+    # Apply R_x(π) to the second qubit to get |01> (up to global phase)
+    gate_r2_x_pi = np.kron(np.eye(2), rotation_matrices(1, np.pi))
+    psi = gate_r2_x_pi @ psi
+    
+    # Step 1: R_y(π/2) on qubit1, R_x(-π/2) on qubit2
+    ry_pi2 = rotation_matrices(2, np.pi/2)
+    rx_minus_pi2 = rotation_matrices(1, -np.pi/2)
+    gate_step1 = np.kron(ry_pi2, rx_minus_pi2)
+    psi = gate_step1 @ psi
+    
+    # Step 2: CNOT12 (control qubit1, target qubit2)
+    gate_cnot12 = np.array([[1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 1],
+                            [0, 0, 1, 0]], dtype=complex)
+    psi = gate_cnot12 @ psi
+    
+    # Step 3: R_z(-2θ) on qubit2
+    rz_minus2theta = rotation_matrices(3, -2 * theta)
+    gate_step3 = np.kron(np.eye(2), rz_minus2theta)
+    psi = gate_step3 @ psi
+    
+    # Step 4: CNOT12 again
+    psi = gate_cnot12 @ psi
+    
+    # Step 5: R_y(-π/2) on qubit1, R_x(π/2) on qubit2
+    ry_minus_pi2 = rotation_matrices(2, -np.pi/2)
+    rx_pi2 = rotation_matrices(1, np.pi/2)
+    gate_step5 = np.kron(ry_minus_pi2, rx_pi2)
+    psi = gate_step5 @ psi
+    
+    return psi
+
+
+------
+
+In the real experiment, The measurement of any Pauli operators $\hat{O}_i$ will be performed by applying an additional unitary transformation $U_i$ at the end of the circuit and measuring $Z_1$ of the first qubit (or say ${Z_1} \otimes I$ of the system). Given $U_i$ and the qubit state $
+|\psi\rangle$, find the expectation value of the $Z_1$ measurement.
+
+
+
+def measureZ(U, psi):
+    '''Perform a measurement in the Z-basis for a 2-qubit system where only Pauli Sz measurements are possible.
+    The measurement is applied to the first qubit.
+    Inputs:
+    U : matrix of shape(4, 4)
+        The unitary transformation to be applied before measurement.
+    psi : array of shape (4, 1)
+        The two-qubit state before the unitary transformation.
+    Output:
+    measured_result: float
+        The result of the Sz measurement after applying U.
+    '''
+    # Apply unitary transformation to the state
+    psi_prime = U @ psi
+    
+    # Define the Z1 operator (Pauli Z on first qubit, identity on second)
+    pauli_z = np.array([[1, 0], [0, -1]], dtype=complex)
+    z1_operator = np.kron(pauli_z, np.eye(2, dtype=complex))
+    
+    # Calculate expectation value
+    expectation = psi_prime.conj().T @ z1_operator @ psi_prime
+    
+    # Extract real scalar value (expectation of Hermitian operator is real)
+    measured_result = np.real(expectation.item())
+    
+    return measured_result
+
+
+------
+
+Use the trial wavefunction given in and the single-qubit measurement scheme in to calculate the expectation value of the energy (or cost function) with the Hamiltonian $H=g_0I+g_1Z_1+g_2Z_2+g_3Z_1Z_2+g_4Y_1Y_2+g_5X_1X_2$. Except the constant term $g_0I$, the other five terms in the Hamiltonian should be calculated seperately with different unitary transformations.
+Background
+Here is the table of the transformations we are going to use:
+$Z_1 \otimes \mathbf{I}$. Then you don't have to do anything as $U = \mathbf{I} \otimes \mathbf{I}$:
+$$
+Z_1 \otimes \mathbf{I}=(\mathbf{I} \otimes \mathbf{I})^{\dagger} \left(Z_1 \otimes \mathbf{I}\right) (\mathbf{I} \otimes \mathbf{I})
+$$
+
+2. $\mathbf{I} \otimes Z_2$, $U=\mathrm{SWAP}$.
+$$
+\mathbf{I} \otimes Z_2=(\mathrm{SWAP})^{\dagger} \left(Z_1 \otimes \mathbf{I}\right) (\mathrm{SWAP})
+$$
+3. $Z_1 \otimes Z_2$, $U=\mathrm{CNOT}_{21}$.
+$$
+Z_1 \otimes Z_2=\left(\mathrm{CNOT}_{21}\right)^{\dagger} \left(Z_1 \otimes \mathbf{I}\right) \left(\mathrm{CNOT}_{21}\right)
+$$
+4. $Y_1 \otimes Y_2$, $U = \mathrm{CNOT}_{21}(HS^\dagger \otimes HS^\dagger)$.
+$$
+Y_1 \otimes Y_2=\left(\mathrm{CNOT}_{21}(HS^\dagger \otimes HS^\dagger)\right)^{\dagger}\left(Z_1 \otimes \mathbf{I}\right)\left(\mathrm{CNOT}_{21}(HS^\dagger \otimes HS^\dagger)\right)
+$$
+5. $X_1 \otimes X_2$, $U = \mathrm{CNOT}_{21}(H\otimes H)$.
+$$
+X_1 \otimes X_2=\left(\mathrm{CNOT}_{21}(H\otimes H)\right)^{\dagger} \left(Z_1 \otimes \mathbf{I}\right)\left(\mathrm{CNOT}_{21}(H\otimes H)\right)
+$$
+
+The end result is that by applying the particular transformation and then measuring $Z_1$ you can get any Pauli measurement you want.
+
+
+def projective_expected(theta, gl):
+    '''Calculate the expectation value of the energy with proper unitary transformations.
+    Input:
+    theta : float
+        The only variational parameter.
+    gl = [g0, g1, g2, g3, g4, g5] : array in size 6
+        Hamiltonian coefficients.
+    Output:
+    energy : float
+        The expectation value of the energy with the given parameter theta.
+    '''
+    # Get the ansatz wavefunction
+    psi = create_ansatz(theta)
+    
+    # Term 0: Constant term g0 * <I>
+    term0 = gl[0]
+    
+    # Term 1: g1 * <Z₁⊗I>
+    U1 = np.eye(4, dtype=complex)
+    exp_z1 = measureZ(U1, psi)
+    term1 = gl[1] * exp_z1
+    
+    # Term 2: g2 * <I⊗Z₂> using SWAP gate
+    swap = np.array([[1, 0, 0, 0],
+                     [0, 0, 1, 0],
+                     [0, 1, 0, 0],
+                     [0, 0, 0, 1]], dtype=complex)
+    exp_z2 = measureZ(swap, psi)
+    term2 = gl[2] * exp_z2
+    
+    # Term 3: g3 * <Z₁⊗Z₂> using CNOT₂₁ gate
+    cnot21 = np.array([[1, 0, 0, 0],
+                       [0, 0, 0, 1],
+                       [0, 0, 1, 0],
+                       [0, 1, 0, 0]], dtype=complex)
+    exp_z1z2 = measureZ(cnot21, psi)
+    term3 = gl[3] * exp_z1z2
+    
+    # Term 4: g4 * <Y₁⊗Y₂> using U = CNOT₂₁(HS†⊗HS†)
+    # Define necessary single-qubit gates
+    H = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]], dtype=complex)
+    S = np.array([[1, 0], [0, 1j]], dtype=complex)
+    Sdagger = S.conj().T
+    HSdagger = H @ Sdagger
+    # Construct the full unitary transformation
+    hs_kron = np.kron(HSdagger, HSdagger)
+    U4 = cnot21 @ hs_kron
+    exp_y1y2 = measureZ(U4, psi)
+    term4 = gl[4] * exp_y1y2
+    
+    # Term 5: g5 * <X₁⊗X₂> using U = CNOT₂₁(H⊗H)
+    h_kron = np.kron(H, H)
+    U5 = cnot21 @ h_kron
+    exp_x1x2 = measureZ(U5, psi)
+    term5 = gl[5] * exp_x1x2
+    
+    # Sum all contributions to get the total energy
+    energy = term0 + term1 + term2 + term3 + term4 + term5
+    
+    return energy
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Write a function to minimize the expectation value of the energy with parameter $\theta$.
+
+
+def perform_vqe(gl):
+    '''Perform vqe optimization
+    Input:
+    gl = [g0, g1, g2, g3, g4, g5] : array in size 6
+        Hamiltonian coefficients.
+    Output:
+    energy : float
+        VQE energy.
+    '''
+
+    return energy
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import numpy as np
+from cmath import exp
+from scipy.linalg import block_diag
+from scipy.optimize import minimize
+from scipy.linalg import expm
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

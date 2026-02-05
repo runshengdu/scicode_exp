@@ -1,0 +1,65 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+First consider the Schrodinger equation of the form: $(-\frac{\hbar^2}{2m}\nabla^2-\frac{Z e^2}{4\pi\varepsilon_0 r})\psi(\vec{r})=E \psi(\vec{r})$. Write a function to calculate $f(r)$ if we rewrite this Shroedinger equation in the form $u''(r) = f(r)u(r)$. The radii $r\_grid$, energy $energy$ and angular momentum quantum number $l$ will be given as input. Use $Z=1$ in this step.
+Background
+The Schroedinger equation without the Hartree term is:
+
+\begin{eqnarray}
+(-\frac{\hbar^2}{2m}\nabla^2-\frac{Z e^2}{4\pi\varepsilon_0 r})\psi(\vec{r})=E \psi(\vec{r})
+\end{eqnarray}
+
+using ansatz:
+
+$\psi(\vec{r}) = Y_{lm}(\hat{r})\; u(r)/r$
+
+and introducing dimensionless variables:
+
+\begin{eqnarray}
+x = \frac{r}{r_B}\\
+\varepsilon = \frac{E}{E_0}
+\end{eqnarray}
+where
+\begin{eqnarray}
+&& r_B = \frac{4\pi\varepsilon_0 \hbar^2}{m e^2} \approx 0.529 A\\
+&& E_0 = \frac{\hbar^2}{2 m r_B^2} == Ry \approx 13.6 eV
+\end{eqnarray}
+
+we get the differential equation
+
+\begin{eqnarray}
+u''(x)-
+\left(\frac{l(l+1)}{x^2}-\frac{2Z}{x}-\varepsilon\right)u(x)=0
+\end{eqnarray}
+
+def f_Schrod(energy, l, r_grid):
+    '''Input 
+    energy: a float
+    l: angular momentum quantum number; an int
+    r_grid: the radial grid; a 1D array of float
+    Output
+    f_r: a 1D array of float 
+    '''
+
+    return f_r
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+from scipy import integrate
+from scipy import optimize
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

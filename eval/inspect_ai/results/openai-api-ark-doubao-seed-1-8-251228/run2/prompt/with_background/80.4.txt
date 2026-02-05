@@ -1,0 +1,168 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Minimum Image Distance Function
+
+Implementing Python function named `dist` that calculates the minimum image distance between two atoms in a periodic cubic system.
+Background:
+The function should implement the minimum image convention, which is used in molecular dynamics simulations to consider the shortest distance between periodic images of particles.
+
+
+def dist(r1, r2, L):
+    '''Calculate the minimum image distance between two atoms in a periodic cubic system.
+    Parameters:
+    r1 : The (x, y, z) coordinates of the first atom.
+    r2 : The (x, y, z) coordinates of the second atom.
+    L (float): The length of the side of the cubic box.
+    Returns:
+    float: The minimum image distance between the two atoms.
+    '''
+    # Compute the coordinate differences
+    delta_x = r1[0] - r2[0]
+    delta_y = r1[1] - r2[1]
+    delta_z = r1[2] - r2[2]
+    
+    # Apply minimum image correction to each coordinate difference
+    delta_x = delta_x - L * round(delta_x / L)
+    delta_y = delta_y - L * round(delta_y / L)
+    delta_z = delta_z - L * round(delta_z / L)
+    
+    # Calculate the Euclidean distance
+    distance = math.sqrt(delta_x ** 2 + delta_y ** 2 + delta_z ** 2)
+    
+    return distance
+
+
+------
+
+Lennard-Jones Potential
+
+Implementing a Python function named `E_ij` to get Lennard-Jones potential with potential well depth epislon that reaches zero at distance sigma between pair of atoms with distance r. which is truncated and shifted to zero at a cutoff distance `rc`.
+Background
+The Lennard-Jones potential models soft repulsive and attractive (van der Waals) interactions. Hence, the Lennard-Jones potential describes electronically neutral atoms or molecules. The commonly used expression for the Lennard-Jones potential is:
+
+$V^{tr-sh}_{LJ}(r) =
+\begin{cases}
+V_{LJ}(r)-V_{LJ}(r_c), & \text{if } r < r_c\\
+0, & \text{if } r > r_c
+\end{cases}
+$
+
+$
+V_{LJ}(r) = 4\epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r} \right)^{6} \right].
+$
+
+$
+V_{LJ}(r_c) = 4\epsilon \left[ \left( \frac{\sigma}{r_c} \right)^{12} - \left( \frac{\sigma}{r_c} \right)^{6} \right].
+$
+
+where r is the distance between two interacting particles, epsilon is the depth of the potential well (usually referred to as 'dispersion energy'), and sigma is the distance at which the particle-particle potential energy V is zero (often referred to as 'size of the particle').
+
+The potential is truncated and shifted at a distance $ r_c $ to ensure the interaction energy becomes zero for $ r > r_c $, simplifying the force computations.
+
+
+def E_ij(r, sigma, epsilon, rc):
+    '''Calculate the combined truncated and shifted Lennard-Jones potential energy and,
+    if specified, the truncated and shifted Yukawa potential energy between two particles.
+    Parameters:
+    r (float): The distance between particles i and j.
+    sigma (float): The distance at which the inter-particle potential is zero for the Lennard-Jones potential.
+    epsilon (float): The depth of the potential well for the Lennard-Jones potential.
+    rc (float): The cutoff distance beyond which the potentials are truncated and shifted to zero.
+    Returns:
+    float: The combined potential energy between the two particles, considering the specified potentials.
+    '''
+    if r >= rc:
+        return 0.0
+    
+    # Calculate Lennard-Jones potential at distance r
+    sigma_over_r = sigma / r
+    lj_r = 4 * epsilon * (sigma_over_r ** 12 - sigma_over_r ** 6)
+    
+    # Calculate Lennard-Jones potential at cutoff distance rc
+    sigma_over_rc = sigma / rc
+    lj_rc = 4 * epsilon * (sigma_over_rc ** 12 - sigma_over_rc ** 6)
+    
+    # Compute truncated and shifted potential
+    truncated_shifted_lj = lj_r - lj_rc
+    
+    return truncated_shifted_lj
+
+
+------
+
+Energy of the whole system
+
+Write a function to get the total energy of the whole system, given the function "E_ij", which computes the Lennard-Jones Potential between pair of atoms. The total energy is calculated as the sum of local energies.
+Background
+The local energy refers to the energy between the two atoms next to each other.
+
+
+def E_pot(xyz, L, sigma, epsilon, rc):
+    '''Calculate the total potential energy of a system using the truncated and shifted Lennard-Jones potential.
+    Parameters:
+    xyz : A NumPy array with shape (N, 3) where N is the number of particles. Each row contains the x, y, z coordinates of a particle in the system.
+    L (float): Length of cubic box
+    sigma (float): The distance at which the inter-particle potential is zero for the Lennard-Jones potential.
+    epsilon (float): The depth of the potential well for the Lennard-Jones potential.
+    rc (float): The cutoff distance beyond which the potentials are truncated and shifted to zero.
+    Returns:
+    float
+        The total potential energy of the system (in zeptojoules).
+    '''
+    total_energy = 0.0
+    num_atoms = xyz.shape[0]
+    for i in range(num_atoms):
+        r1 = xyz[i]
+        for j in range(i + 1, num_atoms):
+            r2 = xyz[j]
+            distance = dist(r1, r2, L)
+            total_energy += E_ij(distance, sigma, epsilon, rc)
+    return total_energy
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Lennard-Jones Force
+
+ Based on Lennard-Jones potential with potential well depth epislon that reaches zero at distance sigma, write a function that calculates the forces between two particles whose three dimensional displacement is r.
+Background
+To get force, we just use the negative gradiant of Lennard-Jones potential (by definition):
+
+$\vec{F}=-\frac{\partial V}{\partial \vec{r}}=-\left(\frac{\partial V}{\partial x} ; \frac{\partial V}{\partial y} ; \frac{\partial V}{\partial z}\right)$
+
+def f_ij(r, sigma, epsilon, rc):
+    '''Calculate the force vector between two particles, considering both the truncated and shifted
+    Lennard-Jones potential and, optionally, the Yukawa potential.
+    Parameters:
+    r (float): The distance between particles i and j.
+    sigma (float): The distance at which the inter-particle potential is zero for the Lennard-Jones potential.
+    epsilon (float): The depth of the potential well for the Lennard-Jones potential.
+    rc (float): The cutoff distance beyond which the potentials are truncated and shifted to zero.
+    Returns:
+    array_like: The force vector experienced by particle i due to particle j, considering the specified potentials
+    '''
+
+    return f
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+import os
+import math
+import time
+import numpy as np
+import scipy as sp
+from mpl_toolkits.mplot3d import Axes3D
+import pickle
+from scipy.constants import  Avogadro
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.

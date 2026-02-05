@@ -1,0 +1,62 @@
+PROBLEM DESCRIPTION:
+You will be provided with problem steps along with background knowledge necessary for solving the problem. Your task will be to develop a Python solution focused on the next step of the problem-solving process.
+
+PROBLEM STEPS AND FUNCTION CODE:
+Here, you'll find the Python code for the initial steps of the problem-solving process. This code is integral to building the solution.
+
+Construct the spatial differential operator a: Partial Derivative $\partial_i$. The first differential operator we want is a simple partial derivative: given an array of field values on 3d meshes, compute the partial derivates and return $\partial_x f(x,y,z)$, $\partial_y f(x,y,z)$ and $\partial_z f(x,y,z)$. We need a second order finite difference operator and on the boundary please use one-sided second-order expression.
+
+
+
+print('Hello, World!')
+
+
+------
+
+Construct the spatial differential operator b: Laplacian $\nabla^2 = \partial_i \partial^i$. Take the laplacian calculation for a field on 3d meshes. Please implement the second order finite difference. Only output the value in the interior grids and make sure the output boundary values are zero.
+
+
+
+print('Hello, World!')
+
+
+NEXT STEP - PROBLEM STEP AND FUNCTION HEADER:
+This part will describe the next step in the problem-solving process. A function header will be provided, and your task is to develop the Python code for this next step based on the provided description and function header.
+
+Construct the spatial differential operator c: Gradient $\nabla_i f$ of Maxwell equations. Take the gradient calculation for a field on 3d meshes, that is calculate $\partial_x f, \partial_y f, \partial_z f$.  Please implement the second order finite difference. Only output the value in the interior grids and make sure the output boundary values are zero. Assume the grid length is the same in all dimensions.
+
+
+def gradient(fct, delta):
+    '''Computes the gradient of a scalar field in the interior of a 3D grid using second-order finite differences.
+    Parameters:
+    -----------
+    fct : numpy.ndarray
+        A 3D array representing the scalar field values on the grid. Shape: (nx, ny, nz).
+    delta : float
+        The grid spacing or step size in all spatial directions.
+    Returns:
+    --------
+    grad_x : numpy.ndarray
+        A 3D array representing the partial derivative of the field with respect to the x direction (∂f/∂x). 
+        Shape: (nx, ny, nz). Boundary values are zeroed out.
+    grad_y : numpy.ndarray
+        A 3D array representing the partial derivative of the field with respect to the y direction (∂f/∂y). 
+        Shape: (nx, ny, nz). Boundary values are zeroed out.
+    grad_z : numpy.ndarray
+        A 3D array representing the partial derivative of the field with respect to the z direction (∂f/∂z). 
+        Shape: (nx, ny, nz). Boundary values are zeroed out.
+    '''
+
+    return grad_x, grad_y, grad_z
+
+DEPENDENCIES:
+Use only the following dependencies in your solution. Do not include these dependencies at the beginning of your code.
+
+from numpy import zeros, linspace, exp, sqrt
+import numpy as np
+
+RESPONSE GUIDELINES:
+Now, based on the instructions and information provided above, write the complete and executable Python program for the next step in a single block.
+Your response should focus exclusively on implementing the solution for the next step, adhering closely to the specified function header and the context provided by the initial steps.
+Your response should NOT include the dependencies and functions of all previous steps. If your next step function calls functions from previous steps, please make sure it uses the headers provided without modification.
+DO NOT generate EXAMPLE USAGE OR TEST CODE in your response. Please make sure your response python code in format of ```python```.
